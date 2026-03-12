@@ -1,7 +1,33 @@
 <script setup>
 import { ref } from "vue";
+import axios from "axios";
 
-const validateFormFields = () => console.log(1);
+const validateFormFields = async (event) => {
+  let data = {};
+
+  for (const element of event.target) {
+    if (element.tagName.toLowerCase() === "input") {
+      data = {
+        ...data,
+        [element.id]: element.value,
+      }
+    }
+  }
+
+  if (data["password"] !== data["password-confirmation"]) {
+    alert("Two password aren't matching");
+    return;
+  }
+
+  if (Object.entries(data).some(([_, value]) => value === "")) {
+    alert("Fields shouldn't be empty");
+    return;
+  }
+
+  const response = await axios.post("http://localhost:8000/src/api.php", data);
+
+  console.log(response);
+};
 </script>
 
 <template>
