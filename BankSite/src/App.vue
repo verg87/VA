@@ -25,6 +25,7 @@ const validateFormFields = async (event) => {
   }
 
   const response = await axios.post("http://localhost:8000/src/api.php", data);
+  // const response = await axios.get("http://localhost:8000/src/api.php");
 
   console.log(response);
 };

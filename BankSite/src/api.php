@@ -1,6 +1,7 @@
 <?php
 // run php -S localhost:8000
 use Symfony\Component\Dotenv\Dotenv;
+use Firebase\JWT\JWT;
 
 require_once __DIR__ . "\\..\\vendor\\autoload.php";
 
@@ -47,7 +48,12 @@ try {
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    echo "hello";
+    $stmt = $db->prepare("SELECT * FROM users");
+    $stmt->execute();
+
+    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode(["users" => $users]);
 }
 
 if ($method === 'POST') {
@@ -85,6 +91,20 @@ if ($method === 'POST') {
         $stmt->bindParam(":last_name", $lastname);
         $stmt->bindParam(":phone_number", $phoneNumber);
         $stmt->bindParam(":password", $pwdHash);
+
+        $time = time();
+
+        $key = 'apple-show-quarantine-serendipity-quixotic-mitigate-snow';
+        $payload = [
+            'iss' => 'http://localhost:8000',
+            'aud' => 'http://localhost:5173',
+            'iat' => $time,
+            'nbf' => $time + (60 * 15)
+        ];
+
+        $jwt = JWT::encode($payload, $key, 'HS256');
+
+        header("Set-Cookie: token=" . $jwt . ";HttpOnly");
 
         if ($stmt->execute()) {
             echo json_encode(["status" => "success", "id" => $db->lastInsertId()]);
