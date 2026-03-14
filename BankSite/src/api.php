@@ -2,12 +2,13 @@
 // run php -S localhost:8000
 use Symfony\Component\Dotenv\Dotenv;
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
 require_once __DIR__ . "\\..\\vendor\\autoload.php";
 
 $dotenv = new Dotenv();
 
-$dotenv->load(__DIR__.'\\..\\.env');
+$dotenv->load(__DIR__ . "\\..\\.env", __DIR__ . "\\..\\.dev.env");
 
 const ALLOWED_ORIGIN = "http://localhost:5173";
 
@@ -26,11 +27,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 //     exit;
 // }
 
-function array_all(array $array, callable $callable) {
+function array_all(array $array, callable $callable) 
+{
     foreach ($array as $key => $value) {
         if (! $callable($value, $key))
             return false;
     }
+    return true;
+}
+
+function getJWT(): string
+{
+    $time = time();
+
+    $payload = [
+        "iss" => "http://localhost:8000",
+        "aud" => "http://localhost:5173",
+        "iat" => $time,
+        "nbf" => $time + (60 * 15)
+    ];
+
+    return JWT::encode($payload, $_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]);
+}
+
+function isValidJWTPayload(array $payload): bool
+{
+    $keysDoNotExist = 
+        $payload["iss"] ?? false && $payload["aud"] ?? false &&
+        $payload["iat"] ?? false && $payload["nbf"] ?? false;
+
+    if (
+        $keysDoNotExist ||
+        $payload["iss"] !== "http://localhost:8000" || 
+        $payload["aud"] !== "http://localhost:5173" ||
+        !is_numeric($payload["iat"]) || !is_numeric($payload["nbf"])
+    ) {
+        return false;
+    }
+
+    if (time() >= $payload["nbf"]) {
+        return false;
+    }
+
     return true;
 }
 
@@ -58,60 +96,74 @@ if ($method === 'GET') {
 
 if ($method === 'POST') {
     $content = file_get_contents("php://input");
-    $data = json_decode($content, true);
+    $info = json_decode($content, true);
 
-    if (array_all($data, fn($value) => $value !== "")) {
-        $name = filter_var($data["name"], FILTER_SANITIZE_STRING);
-        $lastname = filter_var($data["lastname"], FILTER_SANITIZE_STRING);
-        $phoneNumber = filter_var($data["phone-number"], FILTER_SANITIZE_NUMBER_INT);
+    $type = $info["type"];
+    $data = $info["data"];
 
-        $password = $data["password"];
-        $passwordConf = $data["password-confirmation"];
+    if ($type === "sign-up") {
+        if (array_all($data, fn($value) => $value !== "")) {
+            $name = filter_var($data["name"], FILTER_SANITIZE_STRING);
+            $lastname = filter_var($data["lastname"], FILTER_SANITIZE_STRING);
+            $phoneNumber = filter_var($data["phone-number"], FILTER_SANITIZE_NUMBER_INT);
 
-        if ($password !== $passwordConf) {
-            echo json_encode(["message" => "Password didn't match with password confirmation"]);
-        }
+            $password = $data["password"];
+            $passwordConf = $data["password-confirmation"];
 
-        $pwdHash = password_hash($password, PASSWORD_DEFAULT, ["cost" => 12]);
+            if ($password !== $passwordConf) {
+                echo json_encode(["message" => "Password didn't match with password confirmation"]);
+            }
 
-        $createTableSql = "CREATE TABLE IF NOT EXISTS users (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            first_name VARCHAR(50) NOT NULL,
-            last_name VARCHAR(50) NOT NULL,
-            phone_number VARCHAR(20) NOT NULL,
-            password_hash VARCHAR(255) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )";
+            $pwdHash = password_hash($password, PASSWORD_DEFAULT, ["cost" => 12]);
 
-        $db->exec($createTableSql);
+            $createTableSql = "CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                first_name VARCHAR(50) NOT NULL,
+                last_name VARCHAR(50) NOT NULL,
+                phone_number VARCHAR(20) NOT NULL,
+                password_hash VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )";
 
-        $stmt = $db->prepare("INSERT INTO users (first_name, last_name, phone_number, password) VALUES (:first_name, :last_name, :phone_number, :password)");
+            $db->exec($createTableSql);
 
-        $stmt->bindParam(":first_name", $name);
-        $stmt->bindParam(":last_name", $lastname);
-        $stmt->bindParam(":phone_number", $phoneNumber);
-        $stmt->bindParam(":password", $pwdHash);
+            $stmt = $db->prepare(
+                "INSERT INTO users (first_name, last_name, phone_number, password) VALUES (:first_name, :last_name, :phone_number, :password)"
+            );
 
-        $time = time();
+            $stmt->bindParam(":first_name", $name);
+            $stmt->bindParam(":last_name", $lastname);
+            $stmt->bindParam(":phone_number", $phoneNumber);
+            $stmt->bindParam(":password", $pwdHash);
 
-        $key = 'apple-show-quarantine-serendipity-quixotic-mitigate-snow';
-        $payload = [
-            'iss' => 'http://localhost:8000',
-            'aud' => 'http://localhost:5173',
-            'iat' => $time,
-            'nbf' => $time + (60 * 15)
-        ];
+            header("Set-Cookie: token=" . getJWT() . ";HttpOnly");
 
-        $jwt = JWT::encode($payload, $key, 'HS256');
-
-        header("Set-Cookie: token=" . $jwt . ";HttpOnly");
-
-        if ($stmt->execute()) {
-            echo json_encode(["status" => "success", "id" => $db->lastInsertId()]);
+            if ($stmt->execute()) {
+                echo json_encode(["status" => "success", "id" => $db->lastInsertId()]);
+            } else {
+                echo json_encode(["status" => "error", "message" => "Failed to save"]);
+            }
         } else {
-            echo json_encode(["status" => "error", "message" => "Failed to save"]);
+            echo json_encode(["status" => "error", "message" => "Fields shoudn't be empty"]);
         }
-    } else {
-        echo json_encode(["message" => "Fields shoudn't be empty"]);
+    } else if ($type === "auth") {
+        $cookies = [
+            $_COOKIE["token"] ?? null, $_SERVER["HTTP_COOKIE"] ?? null, $_SERVER["Authorization"] ?? null, !$_SERVER["Cookie"] ?? null
+        ];
+        $validCookies = array_filter($cookies, fn($cookie) => $cookie !== null);
+
+        if (count($validCookies) === 0) {
+            header(header($_SERVER["SERVER_PROTOCOL"] . " 401 Unauthorized"));
+            echo json_encode(["status" => "error", "message" => "Unauthorized access"]);
+        } else {
+            $payload = (array) JWT::decode($validCookies[0], new Key($_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]));
+
+            if (!isValidJWTPayload($payload)) {
+                header(header($_SERVER["SERVER_PROTOCOL"] . " 401 Unauthorized"));
+                echo json_encode(["status" => "error", "message" => "Unauthorized access"]);
+            } else {
+                echo json_encode(["status" => "success", "message" => "Authorized access"]);
+            }
+        }
     }
 }
