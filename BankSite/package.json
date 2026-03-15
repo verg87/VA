@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently 'vite' '.\\rr.cmd'",
     "build": "vite build",
     "preview": "vite preview"
   },
@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.4",
+    "concurrently": "^9.2.1",
     "vite": "^7.3.1",
     "vite-plugin-vue-devtools": "^8.0.6"
   },

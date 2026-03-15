@@ -1,6 +1,10 @@
 {
     "require": {
         "symfony/dotenv": "^7.4",
-        "firebase/php-jwt": "^7.0"
+        "firebase/php-jwt": "^7.0",
+        "spiral/roadrunner-cli": "^2.7",
+        "spiral/roadrunner-http": "^4.1",
+        "nyholm/psr7": "^1.8",
+        "league/route": "^6.2"
     }
 }

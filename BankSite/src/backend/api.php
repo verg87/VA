@@ -1,5 +1,4 @@
 <?php
-// run php -S localhost:8000
 use Symfony\Component\Dotenv\Dotenv;
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -20,12 +19,6 @@ header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
-
-// if (isset($_SERVER["HTTP_ORIGIN"]) && $_SERVER["HTTP_ORIGIN"] !== ALLOWED_ORIGIN){
-    
-// } else {
-//     exit;
-// }
 
 function array_all(array $array, callable $callable) 
 {
@@ -72,26 +65,11 @@ function isValidJWTPayload(array $payload): bool
     return true;
 }
 
-try {
-    $db = new PDO("mysql:host=localhost", "root", $_ENV["DB_PASSWORD"]); 
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-    $db->exec("CREATE DATABASE IF NOT EXISTS bank DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
-    $db->exec("USE bank");
-} catch (PDOException $e) {
-    echo json_encode(["error" => $e->getMessage()]);
-    exit;
-}
 
 $method = $_SERVER['REQUEST_METHOD'];
 
 if ($method === 'GET') {
-    $stmt = $db->prepare("SELECT * FROM users");
-    $stmt->execute();
-
-    $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    echo json_encode(["users" => $users]);
+    
 }
 
 if ($method === 'POST') {

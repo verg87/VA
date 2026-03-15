@@ -3,7 +3,7 @@ import router from "@/router";
 import axios from "axios";
 
 (async () => {
-    const response = await axios.post("http://localhost:8000/src/api.php", {type: "auth", data: {}});
+    const response = await axios.post("http://localhost:8000", {type: "auth", data: {}});
 
     if (response.data.status === "error") {
         router.push({ path: "/sign-up" });

@@ -27,7 +27,7 @@ const validateFormFields = async (event) => {
     return;
   }
 
-  const response = await axios.post("http://localhost:8000/src/api.php", {
+  const response = await axios.post("http://localhost:8000", {
     type: "sign-up",
     data,
   });
