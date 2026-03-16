@@ -2,16 +2,23 @@ version: '3'
 rpc:
     listen: 'tcp://127.0.0.1:6001'
 server:
-    command: 'php src/backend/app.php'
+    command: 'php src/backend/App.php'
     relay: pipes
 http:
     address: '127.0.0.1:8000'
     middleware:
         - gzip
+        - headers
     pool:
         num_workers: 1
         supervisor:
             max_worker_memory: 100
+    headers:
+        cors:
+            allowed_origin: 'http://localhost:5173'
+            allowed_headers: 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With'
+            allowed_methods: 'GET,POST'
+        content_type: 'application/json'
 jobs:
     pool:
         num_workers: 2

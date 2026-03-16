@@ -1,1 +1,1 @@
-rr.exe serve
+rr.exe serve -c .rr.yaml

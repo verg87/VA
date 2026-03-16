@@ -3,11 +3,22 @@ import router from "@/router";
 import axios from "axios";
 
 (async () => {
-    const response = await axios.post("http://localhost:8000", {type: "auth", data: {}});
+    // const instance = axios.create({
+    //     url: "",
+    //     method: "post",
+    //     baseURL: "http://127.0.0.1:8000/users",
+    //     data: {
+    //         "bla": "auth",
+    //     }
+    // });
+    const response = await axios.post("http://127.0.0.1:8000/users", {type: "auth", data: {}});
+    // const response = await instance.post();
+    const status = response?.data?.status;
 
-    if (response.data.status === "error") {
-        router.push({ path: "/sign-up" });
-    }
+    // if (status === undefined || status === "error") {
+    //     router.push({ path: "/sign-up" });
+    // }
+    console.log(response);
 })();
 </script>
 
