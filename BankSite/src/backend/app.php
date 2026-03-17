@@ -5,7 +5,6 @@ namespace App;
 require __DIR__ . '\\..\\..\\vendor\\autoload.php';
 
 use League\Route\Router;
-use Nyholm\Psr7\ServerRequest;
 use Nyholm\Psr7\Response;
 use Nyholm\Psr7\Factory\Psr17Factory;
 

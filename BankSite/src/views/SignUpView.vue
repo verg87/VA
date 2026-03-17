@@ -1,44 +1,44 @@
 <script setup>
-import { RouterLink } from "vue-router";
-import router from "@/router";
-import axios from "axios";
+  import { RouterLink } from "vue-router";
+  import router from "@/router";
+  import axios from "axios";
 
-import "../assets/auth.css"
+  import "../assets/auth.css"
 
-const validateFormFields = async (event) => {
-  let data = {};
+  const validateFormFields = async (event) => {
+    let data = {};
 
-  for (const element of event.target) {
-    if (element.tagName.toLowerCase() === "input") {
-      data = {
-        ...data,
-        [element.id]: element.value,
-      };
+    for (const element of event.target) {
+      if (element.tagName.toLowerCase() === "input") {
+        data = {
+          ...data,
+          [element.id]: element.value,
+        };
+      }
     }
-  }
 
-  if (data["password"] !== data["password-confirmation"]) {
-    alert("Two password aren't matching");
-    return;
-  }
+    if (data["password"] !== data["password-confirmation"]) {
+      alert("Two password aren't matching");
+      return;
+    }
 
-  if (Object.entries(data).some(([_, value]) => value === "")) {
-    alert("Fields shouldn't be empty");
-    return;
-  }
+    if (Object.entries(data).some(([_, value]) => value === "")) {
+      alert("Fields shouldn't be empty");
+      return;
+    }
 
-  const response = await axios.post("http://localhost:8000", {
-    type: "sign-up",
-    data,
-  });
+    const response = await axios.post("http://127.0.0.1:8000/users", {
+      type: "sign-up",
+      data,
+    });
 
-  console.log(response);
-  if (response.data.status === "success" && response.data.id) {
-    router.push({ path: "/bank" });
-  } else {
-    alert("Oops something is wrong");
-  }
-};
+    console.log(response);
+    if (response.data.status === "success") {
+      router.push({ path: "/bank" });
+    } else {
+      alert("Oops something is wrong");
+    }
+  };
 </script>
 
 <template>
