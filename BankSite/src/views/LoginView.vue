@@ -1,14 +1,46 @@
 <script setup>
 import { RouterLink } from "vue-router";
+import router from "@/router";
+import axios from "axios";
 
-import "../assets/auth.css"
+import "../assets/auth.css";
+
+const validateLoginFormFields = async (event) => {
+    let data = {};
+
+    for (const element of event.target) {
+        if (element.tagName.toLowerCase() === "input") {
+            data = {
+                ...data,
+                [element.id]: element.value,
+            };
+        }
+    }
+
+    if (Object.entries(data).some(([_, value]) => value === "")) {
+        alert("Fields shouldn't be empty");
+        return;
+    }
+
+    try {
+        axios.post("/api/users", {
+            type: "login",
+            data
+        });
+    } catch (err) {
+        alert("Invalid credentials");
+        return;
+    }
+
+    router.push({ path: "/bank" });
+}
 </script>
 
 <template>
     <p class="header-1">Sign In Here</p>
     <div class="panel">
         <p class="header-2">Login</p>
-        <form @submit.prevent="validateFormFields" action="" method="post" class="auth">
+        <form @submit.prevent="validateLoginFormFields" action="" method="post" class="auth">
             <div class="field">
                 <label for="name">Enter your name</label>
                 <input type="text" id="name" />

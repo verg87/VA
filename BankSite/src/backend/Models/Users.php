@@ -49,7 +49,7 @@ class Users extends Model
             first_name VARCHAR(50) NOT NULL,
             last_name VARCHAR(50) NOT NULL,
             phone_number VARCHAR(20) NOT NULL,
-            password_hash VARCHAR(255) NOT NULL,
+            password VARCHAR(255) NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )";
 
@@ -62,5 +62,36 @@ class Users extends Model
         $stmt->execute();
 
         return $stmt->fetchAll();
+    }
+
+    public function get(string $name, string $lastName, string $password): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT password FROM users WHERE first_name = :first_name AND last_name = :last_name"
+        );
+
+        $stmt->bindParam(":first_name", $name);
+        $stmt->bindParam(":last_name", $lastName);
+
+        $stmt->execute();
+        $matchedPwd = $stmt->fetchAll();
+
+        foreach ($matchedPwd as $pwd) {
+            $hash = $pwd["password"];
+            $valid = password_verify($password, $hash);
+
+            if ($valid) {
+                if (password_needs_rehash($hash, PASSWORD_DEFAULT)) {
+                    $newHash = password_hash($password, PASSWORD_DEFAULT, ["cost" => 12]);
+                    // update password
+                }
+                // login user
+            }
+            else {
+                // login data is invalid
+            }
+        }
+
+        return [];
     }
 }

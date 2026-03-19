@@ -66,14 +66,16 @@ class UsersController
                 $passwordConf = $data["password-confirmation"];
 
                 if ($password !== $passwordConf) {
-                    return new Response(400, [], json_encode(["status" => "error", "message" => "Password didn't match with password confirmation"]));
+                    return new Response(401, [], json_encode(["status" => "error", "message" => "Password didn't match with password confirmation"]));
+                } else if (!$name || !$lastname || $phoneNumber) {
+                    return new Response(401, [], json_encode(["status" => "error", "message" => "Invalid data"]));
                 }
 
-                $headers = ["Set-Cookie" => "token=" . JWTHelper::getJWT() . ";HttpOnly"];
+                $setCookieHeader = ["Set-Cookie" => "token=" . JWTHelper::getJWT() . ";HttpOnly"];
 
                 try {
                     if ($this->users->create($name, $lastname, $phoneNumber, $password)) {
-                        return new Response(200, $headers, json_encode(["status" => "success", "message" => "Successfully added user"]));
+                        return new Response(200, $setCookieHeader, json_encode(["status" => "success", "message" => "Successfully added user"]));
                     }
                 } catch (\Throwable $e) {
                     // Maybe log it to some file
@@ -83,21 +85,35 @@ class UsersController
                 return new Response(500, [], json_encode(["status" => "error", "message" => "Failed to save"]));
             } 
 
-            return new Response(400, [], json_encode(["status" => "error", "message" => "Fields shoudn't be empty"]));
-        } else if ($type === "auth") {
-            var_dump($request->getHeader("Authorization"), $request->getCookieParams());
-            var_dump($_COOKIE);
-            $cookies = [
-                // $_COOKIE["token"] ?? null, $_SERVER["HTTP_COOKIE"] ?? null, $_SERVER["Authorization"] ?? null, !$_SERVER["Cookie"] ?? null
-            ];
-            $validCookies = array_filter($cookies, fn($cookie) => $cookie !== null);
+            return new Response(401, [], json_encode(["status" => "error", "message" => "Fields shoudn't be empty"]));
+        } else if ($type === "login") {
+            if (Functions::array_all($data, fn($value) => $value !== "")) {
+                $name = filter_var($data["name"], FILTER_SANITIZE_STRING);
+                $lastname = filter_var($data["lastname"], FILTER_SANITIZE_STRING);
 
-            if (count($validCookies) === 0) {
+                $password = $data["password"];
+
+                if (!$name || !$lastname) {
+                    return new Response(401, [], json_encode(["status" => "error", "message" => "Invalid data"]));
+                }
+
+                $this->users->get($name, $lastname, $password);
+            }
+
+            return new Response(401, [], json_encode(["status" => "error", "message" => "Fields shoudn't be empty"]));
+        } else if ($type === "auth") {
+            $cookie = $request->getCookieParams()["token"] ?? false;
+
+            if ($cookie == false) {
                 return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
             } 
 
-            $payload = (array) JWT::decode($validCookies[0], new Key($_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]));
-
+            try {
+                $payload = (array) JWT::decode($cookie, new Key($_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]));
+            } catch (\Throwable $e) {
+                return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
+            }
+            
             if (!JWTHelper::isValidJWTPayload($payload)) {
                 return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
             } 

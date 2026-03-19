@@ -18,6 +18,7 @@ http:
             allowed_origin: 'http://localhost:5173'
             allowed_headers: 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With'
             allowed_methods: 'GET,POST'
+            allow_credentials: true
         content_type: 'application/json'
 jobs:
     pool:

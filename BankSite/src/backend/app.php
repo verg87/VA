@@ -29,8 +29,12 @@ $psr7 = new PSR7Worker($worker, $factory, $factory, $factory);
 
 $router = new Router();
 
-$router->get("/users", new UsersController(new Users()));
-$router->post("/users", new UsersController(new Users()));
+$router->get("/api/users", new UsersController(new Users()));
+$router->post("/api/users", new UsersController(new Users()));
+
+$mo = new Users();
+
+
 
 while (true) {
     try {
@@ -44,9 +48,8 @@ while (true) {
     }
 
     try {
-        $response = $router->dispatch($request);
-
-        $psr7->respond($response);
+        $mo->get("Bob", "Doo", "");
+        $psr7->respond($router->dispatch($request));
     } catch (\Throwable $e) {
         $psr7->respond(new Response(500, [], 'Something Went Wrong!'));
         $psr7->getWorker()->error((string)$e);
