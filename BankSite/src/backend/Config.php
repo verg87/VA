@@ -15,6 +15,7 @@ class Config
             "user"     => $env["DB_USER"],
             "pass"     => $env["DB_PASSWORD"],
             "driver"   => $env["DB_DRIVER"] ?? "mysql",
+            "database" => $env["DB_NAME"],
         ];
     }
 }

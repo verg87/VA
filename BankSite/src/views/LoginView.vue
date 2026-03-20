@@ -23,7 +23,7 @@ const validateLoginFormFields = async (event) => {
     }
 
     try {
-        axios.post("/api/users", {
+        await axios.post("/api/users", {
             type: "login",
             data
         });
@@ -42,13 +42,8 @@ const validateLoginFormFields = async (event) => {
         <p class="header-2">Login</p>
         <form @submit.prevent="validateLoginFormFields" action="" method="post" class="auth">
             <div class="field">
-                <label for="name">Enter your name</label>
-                <input type="text" id="name" />
-            </div>
-
-            <div class="field">
-                <label for="lastname">Enter your lastname</label>
-                <input type="text" id="lastname" />
+                <label for="phone-number">Enter your phone number</label>
+                <input type="text" id="phone-number" />
             </div>
 
             <div class="field">

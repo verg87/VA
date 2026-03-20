@@ -58,18 +58,17 @@ class UsersController
 
         if ($type === "sign-up") {
             if (Functions::array_all($data, fn($value) => $value !== "")) {
-                $name = filter_var($data["name"], FILTER_SANITIZE_STRING);
-                $lastname = filter_var($data["lastname"], FILTER_SANITIZE_STRING);
-                $phoneNumber = filter_var($data["phone-number"], FILTER_SANITIZE_NUMBER_INT);
-
-                $password = $data["password"];
-                $passwordConf = $data["password-confirmation"];
+                list(
+                    "name" => $name, 
+                    "lastname" => $lastname, 
+                    "phone-number" => $phoneNumber, 
+                    "password" => $password, 
+                    "password-confirmation" => $passwordConf
+                ) = $data;
 
                 if ($password !== $passwordConf) {
                     return new Response(401, [], json_encode(["status" => "error", "message" => "Password didn't match with password confirmation"]));
-                } else if (!$name || !$lastname || $phoneNumber) {
-                    return new Response(401, [], json_encode(["status" => "error", "message" => "Invalid data"]));
-                }
+                } 
 
                 $setCookieHeader = ["Set-Cookie" => "token=" . JWTHelper::getJWT() . ";HttpOnly"];
 
@@ -80,24 +79,30 @@ class UsersController
                 } catch (\Throwable $e) {
                     // Maybe log it to some file
                     var_dump($e);
+                    return new Response(500, [], json_encode(["status" => "error", "message" => "Failed to save"]));
                 } 
                     
-                return new Response(500, [], json_encode(["status" => "error", "message" => "Failed to save"]));
+                return new Response(401, [], json_encode(["status" => "error", "message" => "Invalid data"]));
             } 
 
             return new Response(401, [], json_encode(["status" => "error", "message" => "Fields shoudn't be empty"]));
         } else if ($type === "login") {
             if (Functions::array_all($data, fn($value) => $value !== "")) {
-                $name = filter_var($data["name"], FILTER_SANITIZE_STRING);
-                $lastname = filter_var($data["lastname"], FILTER_SANITIZE_STRING);
+                list(
+                    "phone-number" => $phoneNumber, 
+                    "password" => $password, 
+                ) = $data;
 
-                $password = $data["password"];
+                $user = $this->users->get($phoneNumber, $password);
 
-                if (!$name || !$lastname) {
+                if ($user === false) {
                     return new Response(401, [], json_encode(["status" => "error", "message" => "Invalid data"]));
+                } else if (count($user) === 0) {
+                    return new Response(404, [], json_encode(["status" => "error", "message" => "No such user"]));
                 }
 
-                $this->users->get($name, $lastname, $password);
+                $setCookieHeader = ["Set-Cookie" => "token=" . JWTHelper::getJWT() . ";HttpOnly"];
+                return new Response(200, $setCookieHeader, json_encode(["status" => "sucess", "message" => "Successfully found the user", "data" => $user]));
             }
 
             return new Response(401, [], json_encode(["status" => "error", "message" => "Fields shoudn't be empty"]));

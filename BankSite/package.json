@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "setup": "php src/backend/Setup.php",
     "dev": "concurrently 'vite' '.\\rr.cmd'",
     "build": "vite build",
     "preview": "vite preview"

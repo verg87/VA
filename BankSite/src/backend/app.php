@@ -32,10 +32,6 @@ $router = new Router();
 $router->get("/api/users", new UsersController(new Users()));
 $router->post("/api/users", new UsersController(new Users()));
 
-$mo = new Users();
-
-
-
 while (true) {
     try {
         $request = $psr7->waitRequest();
@@ -48,7 +44,6 @@ while (true) {
     }
 
     try {
-        $mo->get("Bob", "Doo", "");
         $psr7->respond($router->dispatch($request));
     } catch (\Throwable $e) {
         $psr7->respond(new Response(500, [], 'Something Went Wrong!'));

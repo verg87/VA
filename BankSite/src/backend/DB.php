@@ -10,7 +10,7 @@ class DB
 {
     private PDO $pdo;
 
-    public function __construct(array $config)
+    public function __construct(public array $config)
     {
         $defaultOptions = [
             PDO::ATTR_EMULATE_PREPARES   => false,
