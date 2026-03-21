@@ -6,7 +6,11 @@ import axios from "axios";
     try {
         await axios.post("/api/users", {type: "auth", data: {}});
     } catch (err) {
-        router.push({ path: "/sign-up" });
+        try {
+            await axios.post("/api/users", {type: "refresh-token", data: {}});
+        } catch (e) {
+            router.push({ path: "/sign-up" });
+        }
     }
 })();
 </script>

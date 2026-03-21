@@ -15,6 +15,7 @@ use Firebase\JWT\Key;
 
 use App\Models\Users;
 use App\Helpers\JWTHelper;
+use App\Helpers\JWTLiveTime;
 use App\Helpers\Functions;
 
 class UsersController 
@@ -54,8 +55,6 @@ class UsersController
         $type = $parsedBody["type"];
         $data = $parsedBody["data"];
 
-        $headers = [];
-
         if ($type === "sign-up") {
             if (Functions::array_all($data, fn($value) => $value !== "")) {
                 list(
@@ -70,7 +69,12 @@ class UsersController
                     return new Response(401, [], json_encode(["status" => "error", "message" => "Password didn't match with password confirmation"]));
                 } 
 
-                $setCookieHeader = ["Set-Cookie" => "token=" . JWTHelper::getJWT() . ";HttpOnly"];
+                $setCookieHeader = [
+                    "Set-Cookie" => [
+                        "access-token=" . JWTHelper::getJWT(JWTLiveTime::AccessToken->value) . ";HttpOnly",
+                        "refresh-token=" . JWTHelper::getJWT(JWTLiveTime::RefreshToken->value) . ";HttpOnly",
+                    ]
+                ];
 
                 try {
                     if ($this->users->create($name, $lastname, $phoneNumber, $password)) {
@@ -101,13 +105,18 @@ class UsersController
                     return new Response(404, [], json_encode(["status" => "error", "message" => "No such user"]));
                 }
 
-                $setCookieHeader = ["Set-Cookie" => "token=" . JWTHelper::getJWT() . ";HttpOnly"];
+                $setCookieHeader = [
+                    "Set-Cookie" => [
+                        "access-token=" . JWTHelper::getJWT(JWTLiveTime::AccessToken->value) . ";HttpOnly",
+                        "refresh-token=" . JWTHelper::getJWT(JWTLiveTime::RefreshToken->value) . ";HttpOnly",
+                    ]
+                ];
                 return new Response(200, $setCookieHeader, json_encode(["status" => "sucess", "message" => "Successfully found the user", "data" => $user]));
             }
 
             return new Response(401, [], json_encode(["status" => "error", "message" => "Fields shoudn't be empty"]));
         } else if ($type === "auth") {
-            $cookie = $request->getCookieParams()["token"] ?? false;
+            $cookie = $request->getCookieParams()["access-token"] ?? false;
 
             if ($cookie == false) {
                 return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
@@ -123,7 +132,32 @@ class UsersController
                 return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
             } 
 
-            return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
+            return new Response(200, [], json_encode(["status" => "error", "message" => "Access granted"]));
+        } else if ($type === "refresh-token") {
+            $cookie = $request->getCookieParams()["refresh-token"] ?? false;
+
+            if ($cookie == false) {
+                return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
+            } 
+
+            try {
+                $payload = (array) JWT::decode($cookie, new Key($_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]));
+            } catch (\Throwable $e) {
+                return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
+            }
+            
+            if (!JWTHelper::isValidJWTPayload($payload)) {
+                return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
+            } 
+
+            $updatedTokensHeader = [
+                "Set-Cookie" => [
+                    "access-token=" . JWTHelper::getJWT(JWTLiveTime::AccessToken->value) . ";HttpOnly",
+                    "refresh-token=" . JWTHelper::getJWT(JWTLiveTime::RefreshToken->value) . ";HttpOnly",
+                ]
+            ];
+
+            return new Response(200, $updatedTokensHeader, json_encode(["status" => "error", "message" => "Tokens updated"]));
         }
 
         return new Response(400, [], json_encode(["status" => "error", "message" => "Bad Request"]));
