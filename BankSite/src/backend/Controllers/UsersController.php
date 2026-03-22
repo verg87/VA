@@ -6,21 +6,21 @@ namespace App\Controllers;
 
 require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 
-use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
-use App\Models\Users;
+use App\Models\User;
 use App\Helpers\JWTHelper;
-use App\Helpers\JWTLiveTime;
 use App\Helpers\Functions;
+use App\Helpers\Headers;
+use App\Responses\ResponseFactory;
 
 class UsersController 
 {
-    public function __construct(private Users $users) 
+    public function __construct(private User $user) 
     {
     }
 
@@ -32,17 +32,17 @@ class UsersController
             return $this->post($request);
         }
 
-        return new Response(405, [], json_encode(["status" => "error", "message" => "Method Not Allowed"]));
+        return ResponseFactory::create(405)();
     }
 
     private function get(ServerRequestInterface $request): ResponseInterface 
     {
         try {
-            $users = $this->users->getAll();
-            return new Response(200, [], json_encode(["users" => $users]));
+            $users = $this->user->getAll();
+            return ResponseFactory::create(200)(data: $users);
         } catch (\Throwable $e) {
             var_dump($e);
-            return new Response(500, [], json_encode(["status" => "error", "message" => "Failed to load"]));
+            return ResponseFactory::create(500)(message: "Failed to load");
         } 
     }
 
@@ -55,6 +55,14 @@ class UsersController
         $type = $parsedBody["type"];
         $data = $parsedBody["data"];
 
+        $ip = isset($request->getServerParams()['HTTP_CLIENT_IP']) 
+            ? $request->getServerParams()['HTTP_CLIENT_IP'] 
+            : (isset($request->getServerParams()['HTTP_X_FORWARDED_FOR']) 
+                ? $request->getServerParams()['HTTP_X_FORWARDED_FOR'] 
+                : $request->getServerParams()['REMOTE_ADDR']);
+
+        var_dump($ip);
+
         if ($type === "sign-up") {
             if (Functions::array_all($data, fn($value) => $value !== "")) {
                 list(
@@ -66,30 +74,23 @@ class UsersController
                 ) = $data;
 
                 if ($password !== $passwordConf) {
-                    return new Response(401, [], json_encode(["status" => "error", "message" => "Password didn't match with password confirmation"]));
+                    return ResponseFactory::create(401)(message: "Password didn't match with password confirmation");
                 } 
 
-                $setCookieHeader = [
-                    "Set-Cookie" => [
-                        "access-token=" . JWTHelper::getJWT(JWTLiveTime::AccessToken->value) . ";HttpOnly",
-                        "refresh-token=" . JWTHelper::getJWT(JWTLiveTime::RefreshToken->value) . ";HttpOnly",
-                    ]
-                ];
-
                 try {
-                    if ($this->users->create($name, $lastname, $phoneNumber, $password)) {
-                        return new Response(200, $setCookieHeader, json_encode(["status" => "success", "message" => "Successfully added user"]));
+                    if ($this->user->create($name, $lastname, $phoneNumber, $password)) {
+                        return ResponseFactory::create(200)(headers: Headers::getCookies(), message: "Successfully added user");
                     }
                 } catch (\Throwable $e) {
                     // Maybe log it to some file
                     var_dump($e);
-                    return new Response(500, [], json_encode(["status" => "error", "message" => "Failed to save"]));
+                    return ResponseFactory::create(500)(message: "Failed to save");
                 } 
                     
-                return new Response(401, [], json_encode(["status" => "error", "message" => "Invalid data"]));
+                return ResponseFactory::create(401)(message: "Invalid data");
             } 
 
-            return new Response(401, [], json_encode(["status" => "error", "message" => "Fields shoudn't be empty"]));
+            return ResponseFactory::create(401)(message: "Fields shouldn't be empty");
         } else if ($type === "login") {
             if (Functions::array_all($data, fn($value) => $value !== "")) {
                 list(
@@ -97,69 +98,58 @@ class UsersController
                     "password" => $password, 
                 ) = $data;
 
-                $user = $this->users->get($phoneNumber, $password);
+                $user = $this->user->get($phoneNumber, $password);
 
                 if ($user === false) {
-                    return new Response(401, [], json_encode(["status" => "error", "message" => "Invalid data"]));
+                    return ResponseFactory::create(401)(message: "Invalid data");
                 } else if (count($user) === 0) {
-                    return new Response(404, [], json_encode(["status" => "error", "message" => "No such user"]));
+                    return ResponseFactory::create(404)(message: "No such user");
                 }
 
-                $setCookieHeader = [
-                    "Set-Cookie" => [
-                        "access-token=" . JWTHelper::getJWT(JWTLiveTime::AccessToken->value) . ";HttpOnly",
-                        "refresh-token=" . JWTHelper::getJWT(JWTLiveTime::RefreshToken->value) . ";HttpOnly",
-                    ]
-                ];
-                return new Response(200, $setCookieHeader, json_encode(["status" => "sucess", "message" => "Successfully found the user", "data" => $user]));
+                return ResponseFactory::create(200)(headers: Headers::getCookies(), data: $user);
             }
 
-            return new Response(401, [], json_encode(["status" => "error", "message" => "Fields shoudn't be empty"]));
+            return ResponseFactory::create(401)(message: "Fields shouldn't be empty");
         } else if ($type === "auth") {
             $cookie = $request->getCookieParams()["access-token"] ?? false;
 
             if ($cookie == false) {
-                return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
+                return ResponseFactory::create(401)();
             } 
 
             try {
                 $payload = (array) JWT::decode($cookie, new Key($_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]));
             } catch (\Throwable $e) {
-                return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
+                return ResponseFactory::create(401)();
             }
             
             if (!JWTHelper::isValidJWTPayload($payload)) {
-                return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
+                return ResponseFactory::create(401)();
             } 
 
-            return new Response(200, [], json_encode(["status" => "error", "message" => "Access granted"]));
+            return ResponseFactory::create(200)(message: "Access granted");
         } else if ($type === "refresh-token") {
             $cookie = $request->getCookieParams()["refresh-token"] ?? false;
 
             if ($cookie == false) {
-                return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
+                return ResponseFactory::create(401)();
             } 
 
             try {
                 $payload = (array) JWT::decode($cookie, new Key($_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]));
             } catch (\Throwable $e) {
-                return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
+                return ResponseFactory::create(401)();
             }
             
             if (!JWTHelper::isValidJWTPayload($payload)) {
-                return new Response(401, [], json_encode(["status" => "error", "message" => "Unauthorized access"]));
+                return ResponseFactory::create(401)();
             } 
 
-            $updatedTokensHeader = [
-                "Set-Cookie" => [
-                    "access-token=" . JWTHelper::getJWT(JWTLiveTime::AccessToken->value) . ";HttpOnly",
-                    "refresh-token=" . JWTHelper::getJWT(JWTLiveTime::RefreshToken->value) . ";HttpOnly",
-                ]
-            ];
+            return ResponseFactory::create(200)(headers: Headers::getCookies(), message: "Tokens updated");
+        } else if ($type === "log-out") {
 
-            return new Response(200, $updatedTokensHeader, json_encode(["status" => "error", "message" => "Tokens updated"]));
         }
 
-        return new Response(400, [], json_encode(["status" => "error", "message" => "Bad Request"]));
+        return ResponseFactory::create(400)();
     }
 }

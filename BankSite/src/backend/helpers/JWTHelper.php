@@ -7,27 +7,24 @@ namespace App\Helpers;
 require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 
 use Firebase\JWT\JWT;
+use Ramsey\Uuid\Uuid;
 use Symfony\Component\Dotenv\Dotenv;
 
 $dotenv = new Dotenv();
 
-$dotenv->load(__DIR__ . "\\..\\..\\..\\.dev.env");
-
-enum JWTLiveTime: int
-{
-    case AccessToken = 60 * 15;
-    case RefreshToken = 60 * 60 * 24 * 2;
-}
+$dotenv->overload(__DIR__ . "\\..\\..\\..\\.dev.env");
 
 class JWTHelper 
 {
     static function getJWT(int $liveTime): string
     {
         $time = time();
+        $jti = Uuid::uuid4()->toString();
 
         $payload = [
             "iss" => "http://127.0.0.1:8000",
             "aud" => "http://localhost:5173",
+            "jti" => $jti,
             "iat" => $time,
             "nbf" => $time,
             "exp" => $time + $liveTime,

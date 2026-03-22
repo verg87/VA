@@ -28,7 +28,14 @@ const validateLoginFormFields = async (event) => {
             data
         });
     } catch (err) {
-        alert("Invalid credentials");
+        if (axios.isAxiosError(err)) {
+            if (err.response && err.response.status < 500) {
+                alert("Invalid credentials");
+                return;
+            }
+        }
+        
+        alert("Something went wrong...");
         return;
     }
 

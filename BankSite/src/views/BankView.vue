@@ -13,8 +13,19 @@ import axios from "axios";
         }
     }
 })();
+
+const logOutUser = async (event) => {
+    try {
+        await axios.post("/api/users", {type: "log-out", data: {}});
+    } catch (err) {
+        alert("Something went wrong, sorry. Try later");
+        return;
+    }
+}
 </script>
 
 <template>
     <p>This is a bank site page. You should be here only after authenticating</p>
+
+    <button @click="logOutUser">Log out</button>
 </template>

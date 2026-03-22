@@ -14,11 +14,11 @@ use Spiral\RoadRunner\Http\PSR7Worker;
 use Symfony\Component\Dotenv\Dotenv;
 
 use App\Controllers\UsersController;
-use App\Models\Users;
+use App\Models\User;
 use App\DB;
 
 $dotenv = new Dotenv();
-$dotenv->load(__DIR__ . "\\..\\..\\.env", __DIR__ . "\\..\\..\\.dev.env");
+$dotenv->overload(__DIR__ . "\\..\\..\\.env", __DIR__ . "\\..\\..\\.dev.env");
 
 define("DBI", new DB((new Config($_ENV))->config));
 
@@ -29,8 +29,8 @@ $psr7 = new PSR7Worker($worker, $factory, $factory, $factory);
 
 $router = new Router();
 
-$router->get("/api/users", new UsersController(new Users()));
-$router->post("/api/users", new UsersController(new Users()));
+$router->get("/api/users", new UsersController(new User()));
+$router->post("/api/users", new UsersController(new User()));
 
 while (true) {
     try {

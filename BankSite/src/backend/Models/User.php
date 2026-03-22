@@ -8,7 +8,7 @@ require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 
 use App\Model;
 
-class Users extends Model
+class User extends Model
 {
     public function __construct()
     {
