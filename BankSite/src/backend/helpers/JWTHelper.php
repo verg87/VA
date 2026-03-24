@@ -19,7 +19,7 @@ $dotenv->overload(__DIR__ . "\\..\\..\\..\\.dev.env");
 
 class JWTHelper 
 {
-    private static function getJWT(int $liveTime): array
+    private static function getJWT(int $userId, int $liveTime): array
     {
         $time = time();
         $jti = Uuid::uuid4()->toString();
@@ -27,6 +27,7 @@ class JWTHelper
         return [
             "iss" => "http://127.0.0.1:8000",
             "aud" => "http://localhost:5173",
+            "sub" => $userId,
             "jti" => $jti,
             "iat" => $time,
             "nbf" => $time,
@@ -34,19 +35,18 @@ class JWTHelper
         ];
     }
 
-    static function getAccessJWT(): string
+    static function getAccessJWT(int $userId): string
     {
-        $payload = static::getJWT(JWTLiveTime::AccessToken->value);
+        $payload = static::getJWT($userId, JWTLiveTime::AccessToken->value);
 
         return JWT::encode($payload, $_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]);
     }
 
     static function getRefreshJWT(int $userId, string $userAgent, string $ipAddress): string
     {
-        $payload = static::getJWT(JWTLiveTime::RefreshToken->value);
+        $payload = static::getJWT($userId, JWTLiveTime::RefreshToken->value);
 
         $refreshSession = new RefreshSession();
-
         $refreshSession->create($userId, $payload["jti"], $userAgent, $ipAddress, $payload["exp"]);
 
         return JWT::encode($payload, $_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]);

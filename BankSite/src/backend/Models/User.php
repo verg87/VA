@@ -73,30 +73,28 @@ class User extends Model
         $stmt->bindParam(":phone_number", $phoneNumber);
 
         $stmt->execute();
-        $matchedUsers = $stmt->fetchAll();
+        $user = $stmt->fetch();
 
-        foreach ($matchedUsers as $user) {
-            $hash = $user["password"];
-            $valid = password_verify($password, $hash);
+        $hash = $user["password"];
+        $valid = password_verify($password, $hash);
 
-            if ($valid) {
-                if (password_needs_rehash($hash, PASSWORD_DEFAULT)) {
-                    $newHash = password_hash($password, PASSWORD_DEFAULT, ["cost" => 12]);
+        if ($valid) {
+            if (password_needs_rehash($hash, PASSWORD_DEFAULT)) {
+                $newHash = password_hash($password, PASSWORD_DEFAULT, ["cost" => 12]);
                     
-                    $stmt = $this->db->prepare(
-                        "UPDATE users SET password = :new_password 
-                        WHERE phone_number = :phone_number AND password = :password"
-                    );
+                $stmt = $this->db->prepare(
+                    "UPDATE users SET password = :new_password 
+                    WHERE phone_number = :phone_number AND password = :password"
+                );
 
-                    $stmt->bindParam(":phone_number", $phoneNumber);
-                    $stmt->bindParam(":password", $hash);
-                    $stmt->bindParam(":new_password", $newHash);
+                $stmt->bindParam(":phone_number", $phoneNumber);
+                $stmt->bindParam(":password", $hash);
+                $stmt->bindParam(":new_password", $newHash);
 
-                    $stmt->execute();
-                }
-                
-                return $user;
+                $stmt->execute();
             }
+                
+            return $user;
         }
 
         return [];

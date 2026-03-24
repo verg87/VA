@@ -45,6 +45,22 @@ class RefreshSession extends Model
         $stmt->bindParam(":ia", $ipAddress);
         $stmt->bindParam(":ea", $expiresAt);
 
-        return $stmt->exec();
+        return $stmt->execute();
+    }
+
+    public function get(string $jti): array
+    {
+        $jti = htmlspecialchars($jti);
+
+        if (!$jti) {
+            return [];
+        }
+
+        $stmt = $this->db->prepare("SELECT * FROM refresh_sessions WHERE jti = :jti");
+
+        $stmt->bindParam(":jti", $jti);
+
+        $stmt->execute();
+        return $stmt->fetch();
     }
 }

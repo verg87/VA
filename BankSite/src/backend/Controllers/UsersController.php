@@ -13,6 +13,7 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
 use App\Models\User;
+use App\Models\RefreshSession;
 use App\Helpers\JWTHelper;
 use App\Helpers\Functions;
 use App\Helpers\CookieManager;
@@ -20,7 +21,7 @@ use App\Responses\ResponseFactory;
 
 class UsersController 
 {
-    public function __construct(private User $user) 
+    public function __construct(private User $user, private RefreshSession $refreshSession) 
     {
     }
 
@@ -154,10 +155,12 @@ class UsersController
                 return ResponseFactory::create(401)();
             } 
 
+            if (!count($this->refreshSession->get($payload["jti"]))) {
+                return ResponseFactory::create(401)();
+            } 
 
-            // A bit later
-            // Need to query the RefreshSession table for a matching jti
-            // return ResponseFactory::create(200)(headers: CookieManager::getCookies(), message: "Tokens updated");
+            $cookie = CookieManager::withInfo($payload["sub"], $userAgent, $ipAddress);
+            return ResponseFactory::create(200)(headers: $cookie->create(), message: "Tokens updated");
         } else if ($type === "log-out") {
 
         }

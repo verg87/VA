@@ -24,7 +24,7 @@ class CookieManager
 
     public function create(): array
     {
-        $accessToken = JWTHelper::getAccessJWT();
+        $accessToken = JWTHelper::getAccessJWT($this->userId);
         $refreshToken = JWTHelper::getRefreshJWT($this->userId, $this->userAgent, $this->ipAddress);
     
         return [
