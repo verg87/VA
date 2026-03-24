@@ -53,6 +53,11 @@ class User extends Model
         return $stmt->fetchAll();
     }
 
+    public function getLatestUserId(): int
+    {
+        return (int) $this->db->lastInsertedId();
+    }
+
     public function get(string $phoneNumber, string $password): array|bool
     {
         $phoneNumber = htmlspecialchars($phoneNumber);

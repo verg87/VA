@@ -15,7 +15,7 @@ use Firebase\JWT\Key;
 use App\Models\User;
 use App\Helpers\JWTHelper;
 use App\Helpers\Functions;
-use App\Helpers\Headers;
+use App\Helpers\CookieManager;
 use App\Responses\ResponseFactory;
 
 class UsersController 
@@ -55,13 +55,13 @@ class UsersController
         $type = $parsedBody["type"];
         $data = $parsedBody["data"];
 
-        $ip = isset($request->getServerParams()['HTTP_CLIENT_IP']) 
+        $ipAddress = isset($request->getServerParams()['HTTP_CLIENT_IP']) 
             ? $request->getServerParams()['HTTP_CLIENT_IP'] 
             : (isset($request->getServerParams()['HTTP_X_FORWARDED_FOR']) 
                 ? $request->getServerParams()['HTTP_X_FORWARDED_FOR'] 
                 : $request->getServerParams()['REMOTE_ADDR']);
 
-        var_dump($ip);
+        $userAgent = $request->getHeader("User-Agent")[0] ?? "";
 
         if ($type === "sign-up") {
             if (Functions::array_all($data, fn($value) => $value !== "")) {
@@ -79,7 +79,11 @@ class UsersController
 
                 try {
                     if ($this->user->create($name, $lastname, $phoneNumber, $password)) {
-                        return ResponseFactory::create(200)(headers: Headers::getCookies(), message: "Successfully added user");
+                        $userId = $this->user->getLatestUserId();
+
+                        $cookie = CookieManager::withInfo($userId, $userAgent, $ipAddress);
+
+                        return ResponseFactory::create(200)(headers: $cookie->create(), message: "Successfully added user");
                     }
                 } catch (\Throwable $e) {
                     // Maybe log it to some file
@@ -106,7 +110,12 @@ class UsersController
                     return ResponseFactory::create(404)(message: "No such user");
                 }
 
-                return ResponseFactory::create(200)(headers: Headers::getCookies(), data: $user);
+                $userId = $user["id"];
+                unset($user["id"]);
+
+                $cookie = CookieManager::withInfo($userId, $userAgent, $ipAddress);
+
+                return ResponseFactory::create(200)(headers: $cookie->create(), data: $user);
             }
 
             return ResponseFactory::create(401)(message: "Fields shouldn't be empty");
@@ -145,7 +154,10 @@ class UsersController
                 return ResponseFactory::create(401)();
             } 
 
-            return ResponseFactory::create(200)(headers: Headers::getCookies(), message: "Tokens updated");
+
+            // A bit later
+            // Need to query the RefreshSession table for a matching jti
+            // return ResponseFactory::create(200)(headers: CookieManager::getCookies(), message: "Tokens updated");
         } else if ($type === "log-out") {
 
         }

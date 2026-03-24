@@ -23,8 +23,28 @@ class RefreshSession extends Model
 
     public function create(
         int $userId, string $jti, string $userAgent, string $ipAddress, int $expiresAt
-    ): void
+    ): bool
     {
-        
+        $userId = htmlspecialchars($userId . "");
+        $jti = htmlspecialchars($jti);
+        $userAgent = htmlspecialchars($userAgent);
+        $ipAddress = htmlspecialchars($ipAddress);
+        $expiresAt = htmlspecialchars($expiresAt . "");
+
+        if (!$userId || !$jti || !$userAgent || !$ipAddress || !$expiresAt) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare(
+            "INSERT INTO refresh_sessions (user_id, jti, user_agent, ip_address, expires_at) VALUES (:ui, :ji, :ua, :ia, :ea)"
+        );
+
+        $stmt->bindParam(":ui", $userId);
+        $stmt->bindParam(":ji", $jti);
+        $stmt->bindParam(":ua", $userAgent);
+        $stmt->bindParam(":ia", $ipAddress);
+        $stmt->bindParam(":ea", $expiresAt);
+
+        return $stmt->exec();
     }
 }

@@ -10,18 +10,21 @@ use Firebase\JWT\JWT;
 use Ramsey\Uuid\Uuid;
 use Symfony\Component\Dotenv\Dotenv;
 
+use App\Models\RefreshSession;
+use App\Helpers\JWTLiveTime;
+
 $dotenv = new Dotenv();
 
 $dotenv->overload(__DIR__ . "\\..\\..\\..\\.dev.env");
 
 class JWTHelper 
 {
-    static function getJWT(int $liveTime): string
+    private static function getJWT(int $liveTime): array
     {
         $time = time();
         $jti = Uuid::uuid4()->toString();
 
-        $payload = [
+        return [
             "iss" => "http://127.0.0.1:8000",
             "aud" => "http://localhost:5173",
             "jti" => $jti,
@@ -29,6 +32,22 @@ class JWTHelper
             "nbf" => $time,
             "exp" => $time + $liveTime,
         ];
+    }
+
+    static function getAccessJWT(): string
+    {
+        $payload = static::getJWT(JWTLiveTime::AccessToken->value);
+
+        return JWT::encode($payload, $_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]);
+    }
+
+    static function getRefreshJWT(int $userId, string $userAgent, string $ipAddress): string
+    {
+        $payload = static::getJWT(JWTLiveTime::RefreshToken->value);
+
+        $refreshSession = new RefreshSession();
+
+        $refreshSession->create($userId, $payload["jti"], $userAgent, $ipAddress, $payload["exp"]);
 
         return JWT::encode($payload, $_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]);
     }
