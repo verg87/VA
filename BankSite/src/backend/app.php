@@ -13,7 +13,10 @@ use Spiral\RoadRunner\Http\PSR7Worker;
 
 use Symfony\Component\Dotenv\Dotenv;
 
-use App\Controllers\UsersController;
+use App\Controllers\AuthController;
+use App\Controllers\LoginController;
+use App\Controllers\SignUpController;
+use App\Controllers\RefreshTokenController;
 use App\Models\RefreshSession;
 use App\Models\User;
 use App\DB;
@@ -30,8 +33,11 @@ $psr7 = new PSR7Worker($worker, $factory, $factory, $factory);
 
 $router = new Router();
 
-$router->get("/api/users", new UsersController(new User(), new RefreshSession()));
-$router->post("/api/users", new UsersController(new User(), new RefreshSession()));
+$router->post("/api/users/sign-up", new SignUpController(new User()));
+$router->post("/api/users/login", new LoginController(new User()));
+$router->post("/api/users/auth", new AuthController(new User()));
+$router->post("/api/users/refresh-token", new RefreshTokenController(new RefreshSession()));
+// $router->post("/api/users/log-out", new LogOutController(new User()));
 
 while (true) {
     try {

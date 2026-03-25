@@ -4,10 +4,10 @@ import axios from "axios";
 
 (async () => {
     try {
-        await axios.post("/api/users", {type: "auth", data: {}});
+        await axios.post("/api/users/auth", {data: {}});
     } catch (err) {
         try {
-            await axios.post("/api/users", {type: "refresh-token", data: {}});
+            await axios.post("/api/users/refresh-token", {data: {}});
         } catch (e) {
             router.push({ path: "/sign-up" });
         }
@@ -16,7 +16,7 @@ import axios from "axios";
 
 const logOutUser = async (event) => {
     try {
-        await axios.post("/api/users", {type: "log-out", data: {}});
+        await axios.post("/api/users/log-out", {data: {}});
     } catch (err) {
         alert("Something went wrong, sorry. Try later");
         return;

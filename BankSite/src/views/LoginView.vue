@@ -23,10 +23,7 @@ const validateLoginFormFields = async (event) => {
     }
 
     try {
-        await axios.post("/api/users", {
-            type: "login",
-            data
-        });
+        await axios.post("/api/users/login", {data});
     } catch (err) {
         if (axios.isAxiosError(err)) {
             if (err.response && err.response.status < 500) {

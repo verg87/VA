@@ -51,28 +51,4 @@ class JWTHelper
 
         return JWT::encode($payload, $_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]);
     }
-
-    static function isValidJWTPayload(array $payload): bool
-    {
-        $keysDoExist = (bool)
-            $payload["iss"] ?? false && $payload["aud"] ?? false &&
-            $payload["iat"] ?? false && $payload["nbf"] ?? false && 
-            $payload["exp"] ?? false;
-
-        if (
-            !$keysDoExist ||
-            $payload["iss"] !== "http://127.0.0.1:8000" || 
-            $payload["aud"] !== "http://localhost:5173" ||
-            !is_numeric($payload["iat"]) || !is_numeric($payload["nbf"]) ||
-            !is_numeric($payload["exp"])
-        ) {
-            return false;
-        }
-
-        if (time() >= $payload["exp"]) {
-            return false;
-        }
-
-        return true;
-    }
 }

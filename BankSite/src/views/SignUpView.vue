@@ -27,10 +27,7 @@ const validateSignUpFormFields = async (event) => {
     return;
   }
 
-  const response = await axios.post("/api/users", {
-    type: "sign-up",
-    data,
-  });
+  const response = await axios.post("/api/users/sign-up", {data});
 
   console.log(response);
   if (response.data.status === "success") {
