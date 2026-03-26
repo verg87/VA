@@ -18,6 +18,13 @@ const logOutUser = async (event) => {
     try {
         await axios.post("/api/users/log-out", {data: {}});
     } catch (err) {
+        if (axios.isAxiosError(err)) {
+            if (err.response && err.response.status < 500) {
+                router.push({path: "/sign-up"});
+                return;
+            }
+        }
+
         alert("Something went wrong, sorry. Try later");
         return;
     }

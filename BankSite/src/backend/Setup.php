@@ -37,6 +37,7 @@ try {
         user_agent CHAR(255) NOT NULL,
         ip_address CHAR(45) NOT NULL,
         expires_at INT NOT NULL,
+        is_revoked BOOL NOT NULL DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         
         CONSTRAINT fk_user_sessions 

@@ -16,6 +16,7 @@ use Symfony\Component\Dotenv\Dotenv;
 use App\Controllers\AuthController;
 use App\Controllers\LoginController;
 use App\Controllers\SignUpController;
+use App\Controllers\LogOutController;
 use App\Controllers\RefreshTokenController;
 use App\Models\RefreshSession;
 use App\Models\User;
@@ -37,7 +38,7 @@ $router->post("/api/users/sign-up", new SignUpController(new User()));
 $router->post("/api/users/login", new LoginController(new User()));
 $router->post("/api/users/auth", new AuthController(new User()));
 $router->post("/api/users/refresh-token", new RefreshTokenController(new RefreshSession()));
-// $router->post("/api/users/log-out", new LogOutController(new User()));
+$router->post("/api/users/log-out", new LogOutController(new RefreshSession()));
 
 while (true) {
     try {

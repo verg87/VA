@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 
+use App\Models\RefreshSession;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -13,11 +14,10 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
 use App\Controller;
-use App\Models\RefreshSession;
 use App\Helpers\CookieManager;
 use App\Responses\ResponseFactory;
 
-class RefreshTokenController extends Controller
+class LogOutController extends Controller
 {
     public function __construct(private RefreshSession $refreshSession)
     {
@@ -35,8 +35,8 @@ class RefreshTokenController extends Controller
         $cookie = $request->getCookieParams()["refresh-token"] ?? false;
 
         if ($cookie == false) {
-            return ResponseFactory::create(401)();
-        } 
+            return ResponseFactory::create(400)();
+        }
 
         try {
             $payload = (array) JWT::decode($cookie, new Key($_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]));
@@ -44,17 +44,13 @@ class RefreshTokenController extends Controller
             return ResponseFactory::create(401)();
         }
 
+        if (!$this->refreshSession->update($payload["jti"])) {
+            return ResponseFactory::create(500)();
+        }
         $refreshSessionItem = $this->refreshSession->get($payload["jti"]);
         var_dump($refreshSessionItem);
 
-        if (gettype($refreshSessionItem) === "boolean" || !count($refreshSessionItem)) {
-            return ResponseFactory::create(401)();
-        } else if ($refreshSessionItem["is_revoked"]) {
-            $this->refreshSession->delete($refreshSessionItem["user_id"]);
-            return ResponseFactory::create(401)();
-        }
-
         $cookie = CookieManager::withInfo($payload["sub"], $userAgent, $ipAddress);
-        return ResponseFactory::create(200)(headers: $cookie->create(), message: "Tokens updated");
+        return ResponseFactory::create(302)(headers: $cookie->create(true));
     }
 }

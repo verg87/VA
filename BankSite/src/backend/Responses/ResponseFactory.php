@@ -16,6 +16,8 @@ class ResponseFactory
         return match($statusCode) 
         {
             200 => new OKResponse(),
+            201 => new CreatedResponse(),
+            302 => new FoundResponse(),
             400 => new BadRequestResponse(),
             401 => new UnauthorizedResponse(),
             404 => new NotFoundResponse(),

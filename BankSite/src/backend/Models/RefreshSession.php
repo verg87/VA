@@ -7,6 +7,7 @@ namespace App\Models;
 require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 
 use App\Model;
+use Exception;
 
 class RefreshSession extends Model
 {
@@ -25,8 +26,6 @@ class RefreshSession extends Model
         int $userId, string $jti, string $userAgent, string $ipAddress, int $expiresAt
     ): bool
     {
-        $userId = htmlspecialchars($userId . "");
-        $jti = htmlspecialchars($jti);
         $userAgent = htmlspecialchars($userAgent);
         $ipAddress = htmlspecialchars($ipAddress);
         $expiresAt = htmlspecialchars($expiresAt . "");
@@ -48,19 +47,31 @@ class RefreshSession extends Model
         return $stmt->execute();
     }
 
-    public function get(string $jti): array
+    public function get(string $jti): array|bool
     {
-        $jti = htmlspecialchars($jti);
-
-        if (!$jti) {
-            return [];
-        }
-
         $stmt = $this->db->prepare("SELECT * FROM refresh_sessions WHERE jti = :jti");
 
         $stmt->bindParam(":jti", $jti);
 
         $stmt->execute();
         return $stmt->fetch();
+    }
+
+    public function delete(string $userId): bool
+    {
+        $stmt = $this->db->prepare("DELETE FROM refresh_sessions WHERE user_id = :ui");
+        $stmt->bindParam(":ui", $userId);
+
+        return $stmt->execute();
+    }
+
+    public function update(string $jti): bool
+    {
+        var_dump($jti);
+        $stmt = $this->db->prepare("UPDATE refresh_sessions SET is_revoked = 1 WHERE jti = :ji");
+        $stmt->bindParam(":ji", $jti);
+
+        $stmt->execute();
+        return $stmt->rowCount() > 0; 
     }
 }

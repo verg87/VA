@@ -49,7 +49,7 @@ class SignUpController extends Controller
 
                     $cookie = CookieManager::withInfo($userId, $userAgent, $ipAddress);
 
-                    return ResponseFactory::create(200)(headers: $cookie->create(), message: "Successfully added user");
+                    return ResponseFactory::create(201)(headers: $cookie->create(), message: "Successfully added user");
                 }
             } catch (\Throwable $e) {
                 // Maybe log it to some file
