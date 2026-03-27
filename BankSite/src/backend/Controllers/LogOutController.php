@@ -47,8 +47,6 @@ class LogOutController extends Controller
         if (!$this->refreshSession->update($payload["jti"])) {
             return ResponseFactory::create(500)();
         }
-        $refreshSessionItem = $this->refreshSession->get($payload["jti"]);
-        var_dump($refreshSessionItem);
 
         $cookie = CookieManager::withInfo($payload["sub"], $userAgent, $ipAddress);
         return ResponseFactory::create(302)(headers: $cookie->create(true));

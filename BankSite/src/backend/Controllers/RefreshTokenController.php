@@ -45,7 +45,6 @@ class RefreshTokenController extends Controller
         }
 
         $refreshSessionItem = $this->refreshSession->get($payload["jti"]);
-        var_dump($refreshSessionItem);
 
         if (gettype($refreshSessionItem) === "boolean" || !count($refreshSessionItem)) {
             return ResponseFactory::create(401)();

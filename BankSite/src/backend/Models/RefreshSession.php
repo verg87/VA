@@ -7,7 +7,6 @@ namespace App\Models;
 require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 
 use App\Model;
-use Exception;
 
 class RefreshSession extends Model
 {
@@ -67,7 +66,6 @@ class RefreshSession extends Model
 
     public function update(string $jti): bool
     {
-        var_dump($jti);
         $stmt = $this->db->prepare("UPDATE refresh_sessions SET is_revoked = 1 WHERE jti = :ji");
         $stmt->bindParam(":ji", $jti);
 

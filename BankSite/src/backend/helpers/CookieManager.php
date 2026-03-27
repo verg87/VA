@@ -25,17 +25,18 @@ class CookieManager
     public function create(bool $reset = false): array
     {
         $accessToken = JWTHelper::getAccessJWT($this->userId);
-        $refreshToken = JWTHelper::getRefreshJWT($this->userId, $this->userAgent, $this->ipAddress);
+        $refreshToken = JWTHelper::getRefreshJWT($this->userId, $this->userAgent, $this->ipAddress, $reset);
 
         $att = JWTLiveTime::AccessToken->value;
         $rtt = JWTLiveTime::RefreshToken->value;
-        var_dump($reset ? $att - ($att * 2) : $att);
-        var_dump($reset ? $rtt - ($rtt * 2) : $rtt);
+
+        $at = $reset ? $att - ($att * 2) : $att;
+        $rt = $reset ? $rtt - ($rtt * 2) : $rtt;
     
         return [
             "Set-Cookie" => [
-                "access-token=" . $accessToken . ";HttpOnly" . ";Max-Age=" . $reset ? $att - ($att * 2) : $att . ";SameSite=Strict",
-                "refresh-token=" . $refreshToken . ";HttpOnly" . ";Max-Age=" . $reset ? $rtt - ($rtt * 2) : $rtt . ";SameSite=Strict",
+                "access-token=" . $accessToken . ";HttpOnly" . ";Max-Age=" . $at . ";SameSite=Strict",
+                "refresh-token=" . $refreshToken . ";HttpOnly" . ";Max-Age=" . $rt . ";SameSite=Strict",
             ]
         ];
     }
