@@ -47,6 +47,9 @@ class AccessUserController extends Controller
             return ResponseFactory::create(500)();
         }
 
+        unset($user["id"]);
+        unset($user["password"]);
+
         return ResponseFactory::create(200)(data: $user);
     }
 }

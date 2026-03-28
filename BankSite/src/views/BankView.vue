@@ -4,9 +4,11 @@ import { ref } from "vue";
 
 import axios from "axios";
 
+import ServerErrorView from "./ServerErrorView.vue";
 import SkeletonComponent from "@/components/SkeletonComponent.vue";
 
 const isLoading = ref(true);
+const isError = ref(false);
 const user = ref(null);
 
 (async () => {
@@ -23,17 +25,15 @@ const user = ref(null);
 
     try {
         if (!user.value) {
-            user.value = (await axios.post("/api/users/")).data.data;
+            user.value = (await axios.post("/api/users/")).data;
+            console.log(user.value.data);
         }
     } catch (err) {
-        router.push({ path: "/sign-up" });
-        isLoading.value = false;
+        isError.value = true;
     }
     
     isLoading.value = false;
 })();
-
-console.log(user.value);
 
 const logOutUser = async (event) => {
     try {
@@ -53,8 +53,9 @@ const logOutUser = async (event) => {
 </script>
 
 <template>
-    <SkeletonComponent v-if="isLoading"/>
-    <div v-if="!isLoading" class="all-page">
+    <ServerErrorView v-if="isError"/>
+    <SkeletonComponent v-if="isLoading && !isError"/>
+    <div v-if="!isLoading && !isError" class="all-page">
         <p>This is a bank site page. You should be here only after authenticating</p>
 
         <button @click="logOutUser">Log out</button>

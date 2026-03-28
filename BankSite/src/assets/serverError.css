@@ -1,0 +1,26 @@
+.container-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 48px;
+    font-weight: 700;
+    margin-top: 8px;
+    margin-bottom: 0px;
+}
+
+.container-message {
+    margin-top: 2px;
+    margin-bottom: 4px;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    width: fit-content;
+    height: fit-content;
+    border-width: 2px;
+    border-style: solid;
+    padding-left: 20px;
+    padding-right: 20px;
+    padding-top: 8px;
+    padding-bottom: 14px;
+}

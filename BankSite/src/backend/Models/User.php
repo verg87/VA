@@ -67,7 +67,7 @@ class User extends Model
         }
 
         $stmt = $this->db->prepare(
-            "SELECT * FROM users WHERE user_id = :ui"
+            "SELECT * FROM users WHERE id = :ui"
         );
 
         $stmt->bindParam(":ui", $userId);
