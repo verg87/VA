@@ -36,7 +36,7 @@ class LoginController extends Controller
                 "password" => $password, 
             ) = $data;
 
-            $user = $this->user->get($phoneNumber, $password);
+            $user = $this->user->getByPhoneAndPWD($phoneNumber, $password);
 
             if ($user === false) {
                 return ResponseFactory::create(401)(message: "Invalid data");

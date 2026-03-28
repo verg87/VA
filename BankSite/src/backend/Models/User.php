@@ -58,11 +58,29 @@ class User extends Model
         return (int) $this->db->lastInsertedId();
     }
 
-    public function get(string $phoneNumber, string $password): array|bool
+    public function getById(int $userId): array|bool
+    {
+        $userId = htmlspecialchars($userId . "");
+
+        if (!$userId || !is_numeric($userId)) {
+            return false;
+        }
+
+        $stmt = $this->db->prepare(
+            "SELECT * FROM users WHERE user_id = :ui"
+        );
+
+        $stmt->bindParam(":ui", $userId);
+        $stmt->execute();
+
+        return $stmt->fetch();
+    }
+
+    public function getByPhoneAndPWD(string $phoneNumber, string $password): array|bool
     {
         $phoneNumber = htmlspecialchars($phoneNumber);
 
-        if (!$phoneNumber) {
+        if (!$phoneNumber || !is_numeric($phoneNumber)) {
             return false;
         }
 

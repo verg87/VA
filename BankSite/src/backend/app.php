@@ -13,6 +13,7 @@ use Spiral\RoadRunner\Http\PSR7Worker;
 
 use Symfony\Component\Dotenv\Dotenv;
 
+use App\Controllers\AccessUserController;
 use App\Controllers\AuthController;
 use App\Controllers\LoginController;
 use App\Controllers\SignUpController;
@@ -33,6 +34,8 @@ $factory = new Psr17Factory();
 $psr7 = new PSR7Worker($worker, $factory, $factory, $factory);
 
 $router = new Router();
+
+$router->post("/api/users/", new AccessUserController(new User()));
 
 $router->post("/api/users/sign-up", new SignUpController(new User()));
 $router->post("/api/users/login", new LoginController(new User()));

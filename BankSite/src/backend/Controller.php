@@ -27,7 +27,7 @@ abstract class Controller
         $rawBody = $request->getBody()->getContents();
         $parsedBody = json_decode($rawBody, true);
 
-        $data = $parsedBody["data"];
+        $data = $parsedBody["data"] ?? [];
         $userAgent = $request->getHeader("User-Agent")[0] ?? "";
 
         $ipAddress = isset($request->getServerParams()["REMOTE_ADDR"]) 
