@@ -46,19 +46,23 @@ class RefreshSession extends Model
         return $stmt->execute();
     }
 
-    public function deleteByJTIS(array $jtis): bool
+    public function deleteByJTIS(array $jtis): array
     {
-        $isSuccessful = true;
-
-        foreach ($jtis as $jti) {
-            $stmt = $this->db->prepare("DELETE FROM refresh_sessions WHERE jti = :ji");
-            $stmt->bindParam(":ji", $jti);
-
-            $res = $stmt->execute();
-            $isSuccessful = $isSuccessful ? $res : $isSuccessful;
+        if (empty($jtis)) {
+            return ["status" => "success", "deleted" => 0];
+        }
+        
+        $placeholders = implode(', ', array_fill(0, count($jtis), '?'));
+        $stmt = $this->db->prepare("DELETE FROM refresh_sessions WHERE jti IN ($placeholders)");
+       
+        foreach ($jtis as $index => $jti) {
+            $stmt->bindValue($index + 1, $jti);
         }
 
-        return $isSuccessful;
+        $status = $stmt->execute(); 
+        $numOfDeleted = $stmt->rowCount();
+
+        return ["status" => $status ? "success" : "failure", "deleted" => $numOfDeleted];
     }
 
     public function getAll(): array|bool

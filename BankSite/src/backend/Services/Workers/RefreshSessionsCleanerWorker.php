@@ -14,7 +14,7 @@ class RefreshSessionsCleanerWorker extends Worker
     public function __construct(RefreshSession $refreshSession)
     {
         $this->refreshSession = $refreshSession;
-        parent::__construct('refresh_sessions_cleaner', 30);
+        parent::__construct('refresh_sessions_cleaner', 60 * 60 * 24);
     }
 
     public function work(): void
@@ -23,20 +23,21 @@ class RefreshSessionsCleanerWorker extends Worker
         $jtisToDelete = [];
 
         foreach ($sessions as $session) {
-            $created = $session["created_at"];
             $expires = $session["expires_at"];
-
-            $expiresAtSeconds = strtotime($created) + $expires;
                     
-            if ($expiresAtSeconds >= time()) {
+            if ($expires <= time()) {
                 $jtisToDelete[] = $session["jti"];
             }
         }
 
-        $isSuccessful = $this->refreshSession->deleteByJTIS($jtisToDelete);
+        list("status" => $status, "deleted" => $deleted) = $this->refreshSession->deleteByJTIS($jtisToDelete);
 
-        $isSuccessful 
-            ? $this->log('Removed expired refresh tokens') 
-            : $this->log("Unable to remove expired refresh tokens");
+        if ($status === "success" && $deleted === 0) {
+            $this->log("No expired refresh tokens to delete");
+        } else if ($status === "failure") {
+            $this->log("Unable to remove " . count($jtisToDelete) . " expired refresh tokens");
+        } else if ($status === "success" && $deleted !== 0) {
+            $this->log("Removed " . $deleted . " out of " . count($jtisToDelete) . " expired refresh tokens");
+        }
     }
 }

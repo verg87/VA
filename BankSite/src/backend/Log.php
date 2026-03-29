@@ -13,7 +13,7 @@ class Log
     public function __construct(string $name, string $file, int $level = Logger::DEBUG)
     {
         $this->logger = new Logger($name);
-        $this->logger->setTimezone(new \DateTimeZone('UTC'));
+        $this->logger->setTimezone(new \DateTimeZone(date_default_timezone_get()));
         $this->logger->pushHandler(new StreamHandler($this->defaultLogFilesPath . $file, $level));
     }
 
