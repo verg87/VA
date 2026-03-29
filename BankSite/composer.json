@@ -6,7 +6,9 @@
         "spiral/roadrunner-http": "^4.1",
         "nyholm/psr7": "^1.8",
         "league/route": "^6.2",
-        "ramsey/uuid": "^4.9"
+        "ramsey/uuid": "^4.9",
+        "google/protobuf": "^5.34",
+        "monolog/monolog": "^3.10"
     },
     "autoload": {
         "psr-4": {

@@ -49,7 +49,7 @@ class RefreshTokenController extends Controller
         if (gettype($refreshSessionItem) === "boolean" || !count($refreshSessionItem)) {
             return ResponseFactory::create(401)();
         } else if ($refreshSessionItem["is_revoked"]) {
-            $this->refreshSession->delete($refreshSessionItem["user_id"]);
+            $this->refreshSession->deleteByUserId($refreshSessionItem["user_id"]);
             return ResponseFactory::create(401)();
         }
 

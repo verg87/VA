@@ -1,8 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App;
 
 require __DIR__ . '\\..\\..\\vendor\\autoload.php';
+require_once __DIR__ . "\\Helpers\\DBInstance.php";
+
+ini_set('display_errors', 'stderr');
 
 use League\Route\Router;
 use Nyholm\Psr7\Response;
@@ -10,8 +15,6 @@ use Nyholm\Psr7\Factory\Psr17Factory;
 
 use Spiral\RoadRunner\Worker;
 use Spiral\RoadRunner\Http\PSR7Worker;
-
-use Symfony\Component\Dotenv\Dotenv;
 
 use App\Controllers\AccessUserController;
 use App\Controllers\AuthController;
@@ -21,12 +24,6 @@ use App\Controllers\LogOutController;
 use App\Controllers\RefreshTokenController;
 use App\Models\RefreshSession;
 use App\Models\User;
-use App\DB;
-
-$dotenv = new Dotenv();
-$dotenv->overload(__DIR__ . "\\..\\..\\.env", __DIR__ . "\\..\\..\\.dev.env");
-
-define("DBI", new DB((new Config($_ENV))->config));
 
 $worker = Worker::create();
 

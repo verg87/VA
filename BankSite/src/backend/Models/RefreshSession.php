@@ -46,6 +46,29 @@ class RefreshSession extends Model
         return $stmt->execute();
     }
 
+    public function deleteByJTIS(array $jtis): bool
+    {
+        $isSuccessful = true;
+
+        foreach ($jtis as $jti) {
+            $stmt = $this->db->prepare("DELETE FROM refresh_sessions WHERE jti = :ji");
+            $stmt->bindParam(":ji", $jti);
+
+            $res = $stmt->execute();
+            $isSuccessful = $isSuccessful ? $res : $isSuccessful;
+        }
+
+        return $isSuccessful;
+    }
+
+    public function getAll(): array|bool
+    {
+        $stmt = $this->db->prepare("SELECT * FROM refresh_sessions");
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
     public function get(string $jti): array|bool
     {
         $stmt = $this->db->prepare("SELECT * FROM refresh_sessions WHERE jti = :jti");
@@ -56,7 +79,7 @@ class RefreshSession extends Model
         return $stmt->fetch();
     }
 
-    public function delete(string $userId): bool
+    public function deleteByUserId(string $userId): bool
     {
         $stmt = $this->db->prepare("DELETE FROM refresh_sessions WHERE user_id = :ui");
         $stmt->bindParam(":ui", $userId);

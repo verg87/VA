@@ -3,7 +3,7 @@ rpc:
     listen: 'tcp://127.0.0.1:6001'
 server:
     command: 'php src/backend/App.php'
-    relay: pipes
+    relay: pipes  
 http:
     address: '127.0.0.1:8000'
     middleware:
@@ -20,6 +20,11 @@ http:
             allowed_methods: 'GET,POST'
             allow_credentials: true
         content_type: 'application/json'
+service:
+    refresh_sessions_cleaner:
+        command: "php src/backend/Services/RefreshSessionsCleaner.php"
+        process_num: 1
+        timeout_stop_sec: 60
 jobs:
     pool:
         num_workers: 2
