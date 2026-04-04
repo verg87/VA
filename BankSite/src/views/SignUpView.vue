@@ -4,34 +4,69 @@ import { ref, computed } from "vue";
 import router from "@/router";
 import axios from "axios";
 
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+
 import "../assets/auth.css";
 
 const currentActiveSignUpStage = ref("email");
 const signUpData = ref({});
 
-const validateSignUpFormFields = async (event) => {
-  let data = {};
-
-  for (const element of event.target) {
-    if (element.tagName.toLowerCase() === "input") {
-      data = {
-        ...data,
-        [element.id]: element.value,
-      };
-    }
+const stages = ref({
+  email: {
+    header: "Enter your email",
+    type: "text",
+    id: "email",
+    hasEntered: false,
+    value: ""
+  },
+  phoneNumber: {
+    header: "Enter your phone number",
+    type: "text",
+    id: "phone-number",
+    hasEntered: false,
+    value: ""
+  },
+  firstName: {
+    header: "Enter your first name",
+    type: "text",
+    id: "name",
+    hasEntered: false,
+    value: ""
+  },
+  lastName: {
+    header: "Enter your last name",
+    type: "text",
+    id: "lastname",
+    hasEntered: false,
+    value: ""
+  },
+  password: {
+    header: "Create a password",
+    type: "password",
+    id: "password",
+    hasEntered: false,
+    value: ""
+  },
+  passwordConfirmation: {
+    header: "Confirm your password",
+    type: "password",
+    id: "password-confirmation",
+    hasEntered: false,
+    value: ""
   }
+});
 
-  if (data["password"] !== data["password-confirmation"]) {
-    alert("Two password aren't matching");
+const register = async () => {
+  if (Object.values(signUpData.value).some((prop) => !prop || prop === "")) {
+    alert("Field shouldn't be empty");
+    return;
+  } else if (signUpData.value["password"] !== signUpData.value["passwordConfirmation"]) {
+    alert("Two passwords aren't matching");
     return;
   }
 
-  if (Object.entries(data).some(([_, value]) => value === "")) {
-    alert("Fields shouldn't be empty");
-    return;
-  }
-
-  const response = await axios.post("/api/users/sign-up", {data});
+  const response = await axios.post("/api/users/sign-up", {data: signUpData.value});
 
   console.log(response);
   if (response.data.status === "success") {
@@ -41,88 +76,15 @@ const validateSignUpFormFields = async (event) => {
   }
 };
 
-const stages = ref({
-  email: {
-    headerText: "Enter your email",
-    inputType: "text",
-    inputId: "email",
-    hasEntered: false,
-  },
-  phoneNumber: {
-    headerText: "Enter your phone number",
-    inputType: "text",
-    inputId: "phone-number",
-    hasEntered: false,
-  },
-  names: {
-    headerText: "Enter your first and last name",
-    first: {
-      inputType: "text",
-      inputId: "name"
-    },
-    last: {
-      inputType: "text",
-      inputId: "lastname",
-    },
-    hasEntered: false,
-  },
-  password: {
-    headerText: "Create a password",
-    inputType: "password",
-    inputId: "password",
-    hasEntered: false,
-  },
-  passwordConfirmation: {
-    headerText: "Confirm your password",
-    inputType: "password",
-    inputId: "password-confirmation",
-    hasEntered: false,
-  }
-});
-
-const processSignUpStage = () => {
+const processSignUpStage = async () => {
   const stageName = currentActiveSignUpStage.value;
-  let currentStageInputsValid = true;
+  const stage = stages.value[stageName];
 
-  if (stageName === "names") {
-    const firstNameField = document.getElementById(stages.value.names.first.inputId);
-    const lastNameField = document.getElementById(stages.value.names.last.inputId);
+  signUpData.value = {
+    ...signUpData.value,
+    [stage.id]: stage.value,
+  };
 
-    if (!firstNameField.value || !lastNameField.value) {
-      alert("First name and last name shouldn't be empty");
-      currentStageInputsValid = false;
-    } else {
-      signUpData.value = {
-        ...signUpData.value,
-        [firstNameField.id]: firstNameField.value,
-        [lastNameField.id]: lastNameField.value,
-      };
-    }
-  } else {
-    const id = stages.value[stageName].inputId;
-    const field = document.getElementById(id);
-
-    if (!field || !field.value) {
-      alert("Field shouldn't be empty");
-      currentStageInputsValid = false;
-    } else if (
-      id === "password-confirmation" &&
-      field.value !== signUpData.value["password"]
-    ) {
-      alert("Two passwords aren't matching");
-      currentStageInputsValid = false;
-    } else {
-      signUpData.value = {
-        ...signUpData.value,
-        [id]: field.value,
-      };
-    }
-  }
-
-  if (!currentStageInputsValid) {
-    return;
-  }
-  
   stages.value[stageName].hasEntered = true;
 
   const newStage = Object.entries(stages.value)
@@ -131,7 +93,7 @@ const processSignUpStage = () => {
   if (newStage) {
     currentActiveSignUpStage.value = newStage[0];
   } else {
-    console.log("Sign Up process complete");
+    await register();
   }
 }
 
@@ -145,40 +107,34 @@ const getNextBtnVisibility = computed(() => {
   const stageOrder = Object.keys(stages.value);
   const currentIndex = stageOrder.indexOf(currentStageKey);
 
-  // The 'Next' button should be visible until the last stage is processed and ready to submit
   return currentIndex < stageOrder.length - 1 && stage.hasEntered;
 });
 
 const changeStage = (event) => {
-  const currentStageKey = currentActiveSignUpStage.value;
   const stageOrder = Object.keys(stages.value);
-  const currentIndex = stageOrder.indexOf(currentStageKey);
+  const currentIndex = stageOrder.indexOf(currentActiveSignUpStage.value);
+  const newIndex = event.currentTarget.id === "previous" ? currentIndex - 1 : currentIndex + 1;
 
-  if (currentIndex - 1 >= 0 && event.target.id === "previous") {
-    currentActiveSignUpStage.value = stageOrder[currentIndex - 1];
-  } else if (currentIndex + 1 <= stageOrder.length && event.target.id === "next") {
-    currentActiveSignUpStage.value = stageOrder[currentIndex + 1];
+  if (newIndex >= 0 && newIndex < stageOrder.length) {
+    currentActiveSignUpStage.value = stageOrder[newIndex];
   }
 }
-
-const getFields = computed(() => {
-  const stage = stages.value[currentActiveSignUpStage.value];
-  const fields = Object.values(stage).filter((prop) => typeof prop === "object");
-
-  return fields.length ? fields : [stage];
-});
 </script>
 
 <template>
-  <div style="display: flex; justify-content: space-between; width: fit-content">
-    <button id="previous" v-show="getPreviousBtnVisibility" @click="changeStage">*back image</button>
-    <p class="header-1">{{ stages[currentActiveSignUpStage].headerText }}</p>
-    <button id="next" v-show="getNextBtnVisibility" @click="changeStage">*forward image</button>
+  <div class="signup-header">
+    <FontAwesomeIcon id="previous" :icon="faArrowLeft" v-show="getPreviousBtnVisibility" @click="changeStage"/>
+    <p class="header-1">{{ stages[currentActiveSignUpStage].header }}</p>
+    <FontAwesomeIcon id="next" :icon="faArrowRight" v-show="getNextBtnVisibility" @click="changeStage"/>
   </div>
-  <div v-for="item in getFields">
-    <div class="field">
-      <input :type=item.inputType :id=item.inputId>
-    </div>
+  <div class="signup-container-input">
+    <input 
+      class="signup-input"
+      :type="stages[currentActiveSignUpStage].type" 
+      :id="stages[currentActiveSignUpStage].id" 
+      v-model="stages[currentActiveSignUpStage].value"
+    >
+    <label class="signup-label" :for="stages[currentActiveSignUpStage].id">Email</label>
   </div>
   <div>
     <button @click="processSignUpStage">Next</button>
