@@ -14,7 +14,12 @@ const route = useRoute();
   height: 100vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
 }
+/* @layer components {
+  .auth-wrapper {
+    @apply flex flex-col items-center h-fit
+  }
+} */
 </style>

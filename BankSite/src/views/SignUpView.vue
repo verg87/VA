@@ -14,42 +14,42 @@ const signUpData = ref({});
 
 const stages = ref({
   email: {
-    header: "Enter your email",
+    header: "Email address",
     type: "text",
     id: "email",
     hasEntered: false,
     value: ""
   },
   phoneNumber: {
-    header: "Enter your phone number",
+    header: "Phone number",
     type: "text",
     id: "phone-number",
     hasEntered: false,
     value: ""
   },
   firstName: {
-    header: "Enter your first name",
+    header: "First name",
     type: "text",
     id: "name",
     hasEntered: false,
     value: ""
   },
   lastName: {
-    header: "Enter your last name",
+    header: "Last name",
     type: "text",
     id: "lastname",
     hasEntered: false,
     value: ""
   },
   password: {
-    header: "Create a password",
+    header: "Password",
     type: "password",
     id: "password",
     hasEntered: false,
     value: ""
   },
   passwordConfirmation: {
-    header: "Confirm your password",
+    header: "Confirm password",
     type: "password",
     id: "password-confirmation",
     hasEntered: false,
@@ -59,14 +59,14 @@ const stages = ref({
 
 const register = async () => {
   if (Object.values(signUpData.value).some((prop) => !prop || prop === "")) {
-    alert("Field shouldn't be empty");
+    alert("Fields shouldn't be empty");
     return;
   } else if (signUpData.value["password"] !== signUpData.value["passwordConfirmation"]) {
     alert("Two passwords aren't matching");
     return;
   }
 
-  const response = await axios.post("/api/users/sign-up", {data: signUpData.value});
+  const response = await axios.post("/api/users/sign-up", { data: signUpData.value });
 
   console.log(response);
   if (response.data.status === "success") {
@@ -122,24 +122,31 @@ const changeStage = (event) => {
 </script>
 
 <template>
-  <div class="signup-header">
-    <FontAwesomeIcon id="previous" :icon="faArrowLeft" v-show="getPreviousBtnVisibility" @click="changeStage"/>
-    <p class="header-1">{{ stages[currentActiveSignUpStage].header }}</p>
-    <FontAwesomeIcon id="next" :icon="faArrowRight" v-show="getNextBtnVisibility" @click="changeStage"/>
+  <div class="main">
+    <div class="navbar">
+      <FontAwesomeIcon id="previous" :icon="faArrowLeft" v-show="getPreviousBtnVisibility" @click="changeStage" />
+      <RouterLink to="/" class="link" v-show="!getPreviousBtnVisibility">Home</RouterLink>
+      <RouterLink to="/login" class="link" v-show="!getNextBtnVisibility">Login</RouterLink>
+      <FontAwesomeIcon id="next" :icon="faArrowRight" v-show="getNextBtnVisibility" @click="changeStage" />
+    </div>
+    <div class="header-container">
+      <p class="header-1">Register to your-bank</p>
+    </div>
+    <div class="relative z-0 w-100 mb-6">
+      <input class="input focus:outline-none focus:ring-0 focus:border-brand peer"
+        :type="stages[currentActiveSignUpStage].type" :id="stages[currentActiveSignUpStage].id"
+        v-model="stages[currentActiveSignUpStage].value" placeholder=" " required>
+      <label
+        class="label peer-focus:inset-s-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-5 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
+        :for="stages[currentActiveSignUpStage].id">
+        {{ stages[currentActiveSignUpStage].header }}
+      </label>
+    </div>
+    <div>
+      <button class="process-btn" @click="processSignUpStage">Next</button>
+    </div>
   </div>
-  <div class="signup-container-input">
-    <input 
-      class="signup-input"
-      :type="stages[currentActiveSignUpStage].type" 
-      :id="stages[currentActiveSignUpStage].id" 
-      v-model="stages[currentActiveSignUpStage].value"
-    >
-    <label class="signup-label" :for="stages[currentActiveSignUpStage].id">Email</label>
+  <div class="footer">
+    <p class="footer-text">© 2026 Your-Bank | <a href="/login">Terms of service</a> | <a href="https://github.com/verg87">See More...</a> | English</p>
   </div>
-  <div>
-    <button @click="processSignUpStage">Next</button>
-  </div>
-  <RouterLink to="/login" class="redirect-btn"
-    >Already have an account? Login</RouterLink
-  >
 </template>

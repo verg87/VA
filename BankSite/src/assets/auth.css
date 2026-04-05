@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 .header-1 {
     font-size: 52px;
     font-weight: 700;
@@ -52,49 +54,53 @@
 }
 
 #previous {
-    margin-top: 25px;
+    margin-top: 32px;
+    padding-bottom: 4px;
     margin-right: 12px;
     height: max-content;
 }
 
 #next {
-    margin-top: 25px;
+    margin-top: 32px;
+    padding-bottom: 4px;
     margin-left: 12px;
     height: max-content;
 }
 
-.signup-header {
-    margin-bottom: 52px;
+.header-container {
+    margin-bottom: 42px;
 }
 
-.signup-input {
-  z-index: 0;
-  width: 100%;
-  margin-bottom: 1.25rem;
-  padding-top: 0.625rem;
-  padding-bottom: 0.625rem;
-  padding-left: 0px;
-  padding-right: 0px;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  background-color: transparent;
-  border-width: 0px;
-  border-bottom-width: 2px;
-  appearance: none;
-  transition-duration: 300ms;
-  transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
-  --tw-translate-y: -1.5rem;
-  --tw-scale-x: .75;
-  --tw-scale-y: .75;
-  top: 0.75rem;
-  z-index: -10;
-  transform-origin: 0;
-}
+@layer components {
+    .main {
+        @apply flex flex-col items-center;
+    }
 
-.signup-input:focus {
-  outline: 2px solid transparent;
-  outline-offset: 2px;
-  --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
-  --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(0px + var(--tw-ring-offset-width)) var(--tw-ring-color);
-  box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+    .footer {
+        @apply flex items-center;
+    }
+
+    .footer-text {
+        @apply text-xs font-sans;
+    }
+
+    .input {
+        @apply block pt-5 px-3 w-full h-17 text-base bg-transparent border border-neutral-300 rounded-xl appearance-none;
+    }
+
+    .label {
+        @apply absolute text-base mx-3 text-gray-500 duration-300 transform -translate-y-5 scale-75 top-7 z-10 origin-left;
+    }
+
+    .process-btn {
+        @apply border-0 w-50 h-12 text-white text-xl font-sans font-medium bg-black rounded-3xl mt-5
+    }
+
+    .navbar {
+        @apply flex w-200 justify-between
+    }
+
+    .link {
+        @apply mt-6 w-fit py-1.25 px-6 border border-neutral-300 text-sm font-medium rounded-2xl;
+    }
 }
