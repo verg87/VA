@@ -32,9 +32,10 @@ class SignUpController extends Controller
 
         if (Functions::array_all($data, fn($value) => $value !== "")) {
             list(
+                "email" => $email,
+                "phone-number" => $phoneNumber, 
                 "name" => $name, 
                 "lastname" => $lastname, 
-                "phone-number" => $phoneNumber, 
                 "password" => $password, 
                 "password-confirmation" => $passwordConf
             ) = $data;
@@ -44,7 +45,7 @@ class SignUpController extends Controller
             } 
 
             try {
-                if ($this->user->create($name, $lastname, $phoneNumber, $password)) {
+                if ($this->user->create($name, $lastname, $email, $phoneNumber, $password)) {
                     $userId = $this->user->getLatestUserId();
 
                     $cookie = CookieManager::withInfo($userId, $userAgent, $ipAddress);
@@ -53,7 +54,7 @@ class SignUpController extends Controller
                 }
             } catch (\Throwable $e) {
                 // Maybe log it to some file
-                var_dump($e);
+                var_dump($e->getMessage());
                 return ResponseFactory::create(500)(message: "Failed to save");
             } 
                     

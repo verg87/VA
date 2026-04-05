@@ -9,8 +9,8 @@ import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
 
 import "../assets/auth.css";
 
-const currentActiveSignUpStage = ref("phoneNumber");
-const signUpData = ref({});
+const currentActiveLoginStage = ref("phoneNumber");
+const loginData = ref({});
 
 const stages = ref({
     phoneNumber: {
@@ -29,14 +29,14 @@ const stages = ref({
     },
 });
 
-const register = async () => {
-    if (Object.values(signUpData.value).some((prop) => !prop || prop === "")) {
-        alert("Fields shouldn't be empty");
+const login = async () => {
+    if (Object.values(loginData.value).some((prop) => !prop || prop === "")) {
+        alert("Fields should not be empty");
         return;
     } 
 
     try {
-        await axios.post("/api/users/login", {data});
+        await axios.post("/api/users/login", {data: loginData.value});
     } catch (err) {
         if (axios.isAxiosError(err)) {
             if (err.response && err.response.status < 500) {
@@ -52,12 +52,17 @@ const register = async () => {
     router.push({ path: "/bank" });
 };
 
-const processSignUpStage = async () => {
-    const stageName = currentActiveSignUpStage.value;
+const processLoginStage = async () => {
+    const stageName = currentActiveLoginStage.value;
     const stage = stages.value[stageName];
 
-    signUpData.value = {
-        ...signUpData.value,
+    if (stage.value === "") {
+        alert("Field should not be empty");
+        return;
+    }
+
+    loginData.value = {
+        ...loginData.value,
         [stage.id]: stage.value,
     };
 
@@ -68,18 +73,18 @@ const processSignUpStage = async () => {
     );
 
     if (newStage) {
-        currentActiveSignUpStage.value = newStage[0];
+        currentActiveLoginStage.value = newStage[0];
     } else {
-        await register();
+        await login();
     }
 };
 
 const getPreviousBtnVisibility = computed(() => {
-    return currentActiveSignUpStage.value !== "phoneNumber";
+    return currentActiveLoginStage.value !== "phoneNumber";
 });
 
 const getNextBtnVisibility = computed(() => {
-    const currentStageKey = currentActiveSignUpStage.value;
+    const currentStageKey = currentActiveLoginStage.value;
     const stage = stages.value[currentStageKey];
     const stageOrder = Object.keys(stages.value);
     const currentIndex = stageOrder.indexOf(currentStageKey);
@@ -89,12 +94,18 @@ const getNextBtnVisibility = computed(() => {
 
 const changeStage = (event) => {
     const stageOrder = Object.keys(stages.value);
-    const currentIndex = stageOrder.indexOf(currentActiveSignUpStage.value);
+    const currentIndex = stageOrder.indexOf(currentActiveLoginStage.value);
+    const currentStageData = stages.value[currentActiveLoginStage.value];
     const newIndex =
         event.currentTarget.id === "previous" ? currentIndex - 1 : currentIndex + 1;
 
+    if (currentStageData.value === "" && newIndex > currentIndex) {
+        alert("Field should not be empty");
+        return;
+    }
+
     if (newIndex >= 0 && newIndex < stageOrder.length) {
-        currentActiveSignUpStage.value = stageOrder[newIndex];
+        currentActiveLoginStage.value = stageOrder[newIndex];
     }
 };
 </script>
@@ -112,16 +123,16 @@ const changeStage = (event) => {
         </div>
         <div class="relative z-0 w-100 mb-6">
             <input class="input focus:outline-none focus:ring-0 focus:border-brand peer"
-                :type="stages[currentActiveSignUpStage].type" :id="stages[currentActiveSignUpStage].id"
-                v-model="stages[currentActiveSignUpStage].value" placeholder=" " required />
+                :type="stages[currentActiveLoginStage].type" :id="stages[currentActiveLoginStage].id"
+                v-model="stages[currentActiveLoginStage].value" placeholder=" " required />
             <label
                 class="label peer-focus:inset-s-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-5 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
-                :for="stages[currentActiveSignUpStage].id">
-                {{ stages[currentActiveSignUpStage].header }}
+                :for="stages[currentActiveLoginStage].id">
+                {{ stages[currentActiveLoginStage].header }}
             </label>
         </div>
         <div>
-            <button class="process-btn" @click="processSignUpStage">Next</button>
+            <button class="process-btn" @click="processLoginStage">Next</button>
         </div>
     </div>
     <div class="footer">

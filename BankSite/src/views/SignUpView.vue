@@ -59,26 +59,42 @@ const stages = ref({
 
 const register = async () => {
   if (Object.values(signUpData.value).some((prop) => !prop || prop === "")) {
-    alert("Fields shouldn't be empty");
+    alert("Fields should not be empty");
     return;
-  } else if (signUpData.value["password"] !== signUpData.value["passwordConfirmation"]) {
+  } else if (signUpData.value["password"] !== signUpData.value["password-confirmation"]) {
     alert("Two passwords aren't matching");
     return;
   }
 
-  const response = await axios.post("/api/users/sign-up", { data: signUpData.value });
+  let response;
 
-  console.log(response);
+  try {
+    response = await axios.post("/api/users/sign-up", { data: signUpData.value });
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      if (err.response && err.response.status < 500) {
+        alert("Bad Request");
+        return;
+      }
+    }
+        
+    alert("Something went wrong...");
+    return;
+  }
+  
   if (response.data.status === "success") {
     router.push({ path: "/bank" });
-  } else {
-    alert("Oops something is wrong");
   }
 };
 
 const processSignUpStage = async () => {
   const stageName = currentActiveSignUpStage.value;
   const stage = stages.value[stageName];
+
+  if (stage.value === "") {
+    alert("Field should not be empty");
+    return;
+  }
 
   signUpData.value = {
     ...signUpData.value,
@@ -113,7 +129,13 @@ const getNextBtnVisibility = computed(() => {
 const changeStage = (event) => {
   const stageOrder = Object.keys(stages.value);
   const currentIndex = stageOrder.indexOf(currentActiveSignUpStage.value);
+  const currentStageData = stages.value[currentActiveSignUpStage.value];
   const newIndex = event.currentTarget.id === "previous" ? currentIndex - 1 : currentIndex + 1;
+
+  if (currentStageData.value === "" && newIndex > currentIndex) {
+    alert("Field should not be empty");
+    return;
+  }
 
   if (newIndex >= 0 && newIndex < stageOrder.length) {
     currentActiveSignUpStage.value = stageOrder[newIndex];
@@ -147,6 +169,6 @@ const changeStage = (event) => {
     </div>
   </div>
   <div class="footer">
-    <p class="footer-text">© 2026 Your-Bank | <a href="/login">Terms of service</a> | <a href="https://github.com/verg87">See More...</a> | English</p>
+    <p class="footer-text">© 2026 Your-Bank | <a href="/sign-up">Terms of service</a> | <a href="https://github.com/verg87">See More...</a> | English</p>
   </div>
 </template>

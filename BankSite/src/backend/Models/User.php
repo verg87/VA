@@ -21,24 +21,26 @@ class User extends Model
         $this->db->exec("USE bank");
     }
 
-    public function create(string $firstName, string $lastName, string $phoneNumber, string $password): bool
+    public function create(string $firstName, string $lastName, string $email, string $phoneNumber, string $password): bool
     {
         $firstName = htmlspecialchars($firstName);
         $lastName = htmlspecialchars($lastName);
+        $email = htmlspecialchars($email);
         $phoneNumber = htmlspecialchars($phoneNumber);
 
-        if (!$firstName || !$lastName || !$phoneNumber) {
+        if (!$email || !$firstName || !$lastName || !$phoneNumber || !$password) {
             return false;
         }
 
         $pwdHash = password_hash($password, PASSWORD_DEFAULT, ["cost" => 12]);
 
         $stmt = $this->db->prepare(
-            "INSERT INTO users (first_name, last_name, phone_number, password) VALUES (:first_name, :last_name, :phone_number, :password)"
+            "INSERT INTO users (first_name, last_name, email, phone_number, password) VALUES (:first_name, :last_name, :email, :phone_number, :password)"
         );
 
         $stmt->bindParam(":first_name", $firstName);
         $stmt->bindParam(":last_name", $lastName);
+        $stmt->bindParam(":email", $email);
         $stmt->bindParam(":phone_number", $phoneNumber);
         $stmt->bindParam(":password", $pwdHash);
 

@@ -25,6 +25,7 @@ try {
         id INT AUTO_INCREMENT PRIMARY KEY,
         first_name CHAR(50) NOT NULL,
         last_name CHAR(50) NOT NULL,
+        email CHAR(254) NOT NULL UNIQUE, 
         phone_number CHAR(20) NOT NULL UNIQUE,
         password CHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
