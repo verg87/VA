@@ -53,8 +53,18 @@ class SignUpController extends Controller
                     return ResponseFactory::create(201)(headers: $cookie->create(), message: "Successfully added user");
                 }
             } catch (\Throwable $e) {
+                if ($e->getCode() === "23000") {
+                    if (str_contains($e->getMessage(), "users.email")) {
+                        return ResponseFactory::create(400)(message: "A user with this email already exists");
+                    } else if (str_contains($e->getMessage(), "users.phone_number")) {
+                        return ResponseFactory::create(400)(message: "A user with this phone number already exists");
+                    } 
+                  
+                    return ResponseFactory::create(400)(message: "A user with such credentials already exists");
+                }
                 // Maybe log it to some file
                 var_dump($e->getMessage());
+
                 return ResponseFactory::create(500)(message: "Failed to save");
             } 
                     

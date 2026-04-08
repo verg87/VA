@@ -57,7 +57,7 @@ class User extends Model
 
     public function getLatestUserId(): int
     {
-        return (int) $this->db->lastInsertedId();
+        return (int) $this->db->lastInsertId();
     }
 
     public function getById(int $userId): array|bool

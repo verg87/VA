@@ -7,6 +7,8 @@ import axios from "axios";
 import ServerErrorView from "./ServerErrorView.vue";
 import SkeletonComponent from "@/components/SkeletonComponent.vue";
 
+import "../assets/bank.css";
+
 const isLoading = ref(true);
 const isError = ref(false);
 const user = ref(null);
@@ -40,12 +42,11 @@ const logOutUser = async (event) => {
         await axios.post("/api/users/log-out", {data: {}});
     } catch (err) {
         if (axios.isAxiosError(err)) {
-            if (err.response && err.response.status < 500) {
+            if (err.response && err.response.status < 400) {
                 router.push({path: "/sign-up"});
                 return;
             }
         }
-
         alert("Something went wrong, sorry. Try later");
         return;
     }
@@ -58,6 +59,6 @@ const logOutUser = async (event) => {
     <div v-if="!isLoading && !isError" class="all-page">
         <p>This is a bank site page. You should be here only after authenticating</p>
 
-        <button @click="logOutUser">Log out</button>
+        <button class="logout-btn" @click="logOutUser">Log out</button>
     </div>
 </template>

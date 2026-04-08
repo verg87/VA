@@ -73,7 +73,7 @@ const register = async () => {
   } catch (err) {
     if (axios.isAxiosError(err)) {
       if (err.response && err.response.status < 500) {
-        alert("Bad Request");
+        alert(err.response.data.message);
         return;
       }
     }

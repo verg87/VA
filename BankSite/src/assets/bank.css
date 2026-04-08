@@ -1,0 +1,11 @@
+@import "tailwindcss";
+
+@layer components {
+    .all-page {
+        @apply size-full px-4
+    }
+
+    .logout-btn {
+        @apply p-1 border rounded-lg
+    }
+}
