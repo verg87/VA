@@ -1,5 +1,7 @@
 # BankSite
 
+This is a bank site, with depositing, withdrawing, card to card transactions features and more. Mainly this project is meant to show how to properly protect a website from attacks.
+
 ## Project Setup
 
 Install vue dependencies
@@ -19,7 +21,7 @@ Generate RoadRunner executable
 
 When installing RoadRunner executable do not create .rr.yaml file since we already have one
 
-### Compile and Hot-Reload for Development
+### Start the website
 
 ```sh
 npm run dev
@@ -30,3 +32,7 @@ npm run dev
 ```sh
 npm run build
 ```
+
+### Logging
+
+This project has a logging worker service. It logs every error on the backend, daily routines, like clearing a database from expired or unwanted data. In order to see those log files you need to run a website first, it will create logs folder. All log files will be generated in src/backend/log folder. 
