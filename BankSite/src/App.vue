@@ -17,9 +17,4 @@ const route = useRoute();
   justify-content: space-between;
   align-items: center;
 }
-/* @layer components {
-  .auth-wrapper {
-    @apply flex flex-col items-center h-fit
-  }
-} */
 </style>

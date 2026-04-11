@@ -2,10 +2,26 @@
 
 @layer components {
     .all-page {
-        @apply size-full px-4
+        @apply size-full
     }
 
     .logout-btn {
-        @apply p-1 border rounded-lg
+        @apply p-1 ml-4
+    }
+
+    .bank-navbar {
+        @apply flex justify-between items-center p-4 bg-gray-100
+    }
+
+    .bank-nav-links {
+        @apply flex items-center gap-4
+    }
+
+    .bank-nav-link {
+        @apply text-gray-700 hover:text-blue-500
+    }
+
+    .bank-user-info {
+        @apply text-gray-700
     }
 }

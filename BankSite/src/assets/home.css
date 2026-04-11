@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@layer components {
+    .home-main {
+        @apply flex flex-col items-center justify-center min-h-screen p-4 text-gray-700;
+    }
+
+    .home-navbar {
+        @apply flex justify-between w-full p-4 absolute top-0 left-0;
+    }
+
+    .home-link {
+        @apply text-gray-700 no-underline text-lg transition-colors duration-300 hover:text-blue-500;
+    }
+
+    .home-link-container {
+        @apply flex gap-6 mr-8
+    }
+
+    .home-navbar-title {
+        @apply font-bold text-lg ml-8
+    }
+
+    .home-navbar-extra-sources {
+        @apply flex gap-6 text-lg
+    }
+
+    .home-header-container {
+        @apply text-center mb-8;
+    }
+
+    .home-header-1 {
+        @apply text-5xl font-bold mb-2;
+    }
+
+    .home-header-2 {
+        @apply text-2xl text-gray-600;
+    }
+
+    .home-content {
+        @apply text-center max-w-2xl;
+    }
+
+    .home-text {
+        @apply text-lg leading-relaxed mb-6;
+    }
+
+    .home-footer {
+        @apply absolute bottom-0 w-full text-center p-4 text-sm text-gray-500;
+    }
+
+    .home-footer-text a {
+        @apply text-gray-600 no-underline hover:underline;
+    }
+
+    .blue-gradient {
+        @apply bg-linear-to-t from-blue-500/20 to-transparent;
+    }
+}

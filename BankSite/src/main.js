@@ -11,4 +11,8 @@ const app = createApp(App)
 app.use(createPinia())
 app.use(router)
 
+router.afterEach((to) => {
+    document.title = to.meta.title || "Bank Site"
+})
+
 app.mount('#app')

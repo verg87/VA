@@ -169,6 +169,6 @@ const changeStage = (event) => {
     </div>
   </div>
   <div class="footer">
-    <p class="footer-text">© 2026 Your-Bank | <a href="/sign-up">Terms of service</a> | <a href="https://github.com/verg87">See More...</a> | English</p>
+    <p class="footer-text">© 2026 Your-Bank | <a href="#">Terms of service</a> | <a href="https://github.com/verg87">See More...</a> | English</p>
   </div>
 </template>

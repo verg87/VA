@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@layer components {
+    .dropdown-container {
+        @apply relative inline-block;
+    }
+
+    .dropdown-button {
+        @apply inline-flex items-center justify-center capitalize;
+    }
+
+    .dropdown-arrow {
+        @apply w-4 h-4 ms-1.5 -me-0.5;
+    }
+
+    .dropdown-menu {
+        @apply absolute top-full mt-2 z-10 border border-neutral-300 rounded-xl divide-y divide-neutral-300 shadow-lg w-26;
+    }
+
+    .dropdown-list {
+        @apply p-2 text-sm font-medium;
+    }
+
+    .dropdown-item {
+        @apply inline-flex items-center w-full p-2 hover:bg-gray-100 rounded;
+    }
+}

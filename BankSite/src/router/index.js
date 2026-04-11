@@ -6,10 +6,10 @@ import BankView from '@/views/BankView.vue';
 import LoginView from '@/views/LoginView.vue';
 
 const routes = [
-  { path: "/", component: HomeView },
-  { path: "/sign-up", component: SignUpView, meta: { wrapperClass: "auth-wrapper" }},
-  { path: "/login", component: LoginView, meta: { wrapperClass: "auth-wrapper" } },
-  { path: "/bank", component: BankView },
+  { path: "/", component: HomeView, meta: {title: "Home"} },
+  { path: "/sign-up", component: SignUpView, meta: { wrapperClass: "auth-wrapper", title: "Sign Up" }},
+  { path: "/login", component: LoginView, meta: { wrapperClass: "auth-wrapper", title: "Login" } },
+  { path: "/bank", component: BankView, meta: {title: "Bank"} },
 ]
 
 const router = createRouter({
