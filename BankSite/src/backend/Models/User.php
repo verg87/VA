@@ -32,7 +32,7 @@ class User extends Model
             return false;
         }
 
-        $pwdHash = password_hash($password, PASSWORD_DEFAULT, ["cost" => 12]);
+        $pwdHash = password_hash($password, PASSWORD_DEFAULT);
 
         $stmt = $this->db->prepare(
             "INSERT INTO users (first_name, last_name, email, phone_number, password) VALUES (:first_name, :last_name, :email, :phone_number, :password)"
@@ -100,7 +100,7 @@ class User extends Model
 
         if ($valid) {
             if (password_needs_rehash($hash, PASSWORD_DEFAULT)) {
-                $newHash = password_hash($password, PASSWORD_DEFAULT, ["cost" => 12]);
+                $newHash = password_hash($password, PASSWORD_DEFAULT);
                     
                 $stmt = $this->db->prepare(
                     "UPDATE users SET password = :new_password 

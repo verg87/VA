@@ -34,9 +34,9 @@ try {
     $createRefreshSessionsTableSql = "CREATE TABLE refresh_sessions (
         id INT auto_increment PRIMARY KEY,
         user_id INT NOT NULL,
-        jti CHAR(36) UNIQUE NOT NULL,
-        user_agent CHAR(255) NOT NULL,
-        ip_address CHAR(45) NOT NULL,
+        jti CHAR(128) UNIQUE NOT NULL,
+        user_agent CHAR(128) NOT NULL,
+        ip_address CHAR(128) NOT NULL,
         expires_at INT NOT NULL,
         is_revoked BOOL NOT NULL DEFAULT false,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

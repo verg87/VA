@@ -37,10 +37,14 @@ class RefreshSession extends Model
             "INSERT INTO refresh_sessions (user_id, jti, user_agent, ip_address, expires_at) VALUES (:ui, :ji, :ua, :ia, :ea)"
         );
 
+        $hashedJTI = hash("sha512", $jti);
+        $hashedUserAgent = hash("sha512", $userAgent);
+        $hashedIpAddress = hash("sha512", $ipAddress);
+
         $stmt->bindParam(":ui", $userId);
-        $stmt->bindParam(":ji", $jti);
-        $stmt->bindParam(":ua", $userAgent);
-        $stmt->bindParam(":ia", $ipAddress);
+        $stmt->bindParam(":ji", $hashedJTI);
+        $stmt->bindParam(":ua", $hashedUserAgent);
+        $stmt->bindParam(":ia", $hashedIpAddress);
         $stmt->bindParam(":ea", $expiresAt);
 
         return $stmt->execute();
@@ -56,7 +60,8 @@ class RefreshSession extends Model
         $stmt = $this->db->prepare("DELETE FROM refresh_sessions WHERE jti IN ($placeholders)");
        
         foreach ($jtis as $index => $jti) {
-            $stmt->bindValue($index + 1, $jti);
+            $hashedJTI = hash("sha512", $jti);
+            $stmt->bindValue($index + 1, $hashedJTI);
         }
 
         $status = $stmt->execute(); 
@@ -77,7 +82,8 @@ class RefreshSession extends Model
     {
         $stmt = $this->db->prepare("SELECT * FROM refresh_sessions WHERE jti = :jti");
 
-        $stmt->bindParam(":jti", $jti);
+        $hashedJTI = hash("sha512", $jti);
+        $stmt->bindParam(":jti", $hashedJTI);
 
         $stmt->execute();
         return $stmt->fetch();
@@ -94,7 +100,9 @@ class RefreshSession extends Model
     public function update(string $jti): bool
     {
         $stmt = $this->db->prepare("UPDATE refresh_sessions SET is_revoked = 1 WHERE jti = :ji");
-        $stmt->bindParam(":ji", $jti);
+
+        $hashedJTI = hash("sha512", $jti);
+        $stmt->bindParam(":ji", $hashedJTI);
 
         $stmt->execute();
         return $stmt->rowCount() > 0; 

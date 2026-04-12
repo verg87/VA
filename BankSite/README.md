@@ -21,6 +21,11 @@ Generate RoadRunner executable
 
 When installing RoadRunner executable do not create .rr.yaml file since we already have one
 
+Create necessary tables for the database
+```sh
+php ./src/backend/Setup.php
+```
+
 ### Start the website
 
 ```sh
