@@ -48,7 +48,19 @@ try {
         UNIQUE INDEX idx_jti (jti)
     )";
 
+    $createCardsTableSql = "CREATE TABLE cards (
+        id INT auto_increment PRIMARY KEY,
+        user_id INT NOT NULL,
+        card_type CHAR(9) NOT NULL,
+        amount INT NOT NULL,
+
+        CONSTRAINT fk_user_cards 
+            FOREIGN KEY (user_id) REFERENCES users(id) 
+            ON DELETE CASCADE
+    )";
+
     $pdo->exec($createUsersTableSql);
+    $pdo->exec($createCardsTableSql);
     $pdo->exec($createRefreshSessionsTableSql);
 } catch (\PDOException $e) {
     var_dump($e->getMessage());

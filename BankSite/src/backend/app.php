@@ -16,12 +16,17 @@ use Nyholm\Psr7\Factory\Psr17Factory;
 use Spiral\RoadRunner\Worker;
 use Spiral\RoadRunner\Http\PSR7Worker;
 
+use App\Controllers\CardsController;
+
 use App\Controllers\AccessUserController;
 use App\Controllers\AuthController;
 use App\Controllers\LoginController;
 use App\Controllers\SignUpController;
 use App\Controllers\LogOutController;
 use App\Controllers\RefreshTokenController;
+
+use App\Models\Card;
+
 use App\Models\RefreshSession;
 use App\Models\User;
 
@@ -32,8 +37,10 @@ $psr7 = new PSR7Worker($worker, $factory, $factory, $factory);
 
 $router = new Router();
 
-$router->post("/api/users/", new AccessUserController(new User()));
+$router->get("/api/bank/cards", new CardsController(new Card()));
+$router->post("/api/bank/cards", new CardsController(new Card()));
 
+$router->post("/api/users/", new AccessUserController(new User()));
 $router->post("/api/users/sign-up", new SignUpController(new User()));
 $router->post("/api/users/login", new LoginController(new User()));
 $router->post("/api/users/auth", new AuthController(new User()));
