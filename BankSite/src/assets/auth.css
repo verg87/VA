@@ -93,7 +93,13 @@
     }
 
     .process-btn {
-        @apply border-0 w-50 h-12 text-white text-xl font-sans font-medium bg-black hover:bg-neutral-800 rounded-3xl mt-5
+        @apply border-0 w-50 h-12 text-white text-xl font-sans font-medium bg-black hover:bg-neutral-800 rounded-3xl mt-5;
+        transition: transform 0.1s ease-in-out;
+    }
+
+    .process-btn:active {
+        transform: scale(0.98);
+        @apply bg-neutral-900;
     }
 
     .navbar {

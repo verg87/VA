@@ -39,7 +39,7 @@ class LoginController extends Controller
             $user = $this->user->getByPhoneAndPWD($phoneNumber, $password);
 
             if ($user === false) {
-                return ResponseFactory::create(401)(message: "Invalid data");
+                return ResponseFactory::create(400)(message: "Invalid data");
             } else if (count($user) === 0) {
                 return ResponseFactory::create(404)(message: "No such user");
             }
@@ -52,6 +52,6 @@ class LoginController extends Controller
             return ResponseFactory::create(200)(headers: $cookie->create(), data: $user);
         }
 
-        return ResponseFactory::create(401)(message: "Fields shouldn't be empty");
+        return ResponseFactory::create(400)(message: "Fields shouldn't be empty");
     }
 }

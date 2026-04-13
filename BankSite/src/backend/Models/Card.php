@@ -27,7 +27,7 @@ class Card extends Model
         $cardType = htmlspecialchars($cardType);
         $amount = htmlspecialchars($amount . "");
 
-        if (!$userId || !$cardType || !$amount) {
+        if (!$userId || !$cardType || $amount === "") {
             return false;
         }
 

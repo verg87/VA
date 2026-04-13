@@ -3,7 +3,7 @@ import "../assets/serverError.css";
 </script>
 <template>
     <div class="all-page centered">
-        <div class="container">
+        <div class="error-container">
             <p class="container-header">
                 <span>ERROR </span>
                 <span>500</span>

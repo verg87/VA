@@ -28,7 +28,7 @@ class User extends Model
         $email = htmlspecialchars($email);
         $phoneNumber = htmlspecialchars($phoneNumber);
 
-        if (!$email || !$firstName || !$lastName || !$phoneNumber || !$password) {
+        if (!$email || !$firstName || !$lastName || !$phoneNumber || $password === "") {
             return false;
         }
 

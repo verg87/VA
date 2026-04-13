@@ -41,7 +41,7 @@ class SignUpController extends Controller
             ) = $data;
 
             if ($password !== $passwordConf) {
-                return ResponseFactory::create(401)(message: "Password didn't match with password confirmation");
+                return ResponseFactory::create(400)(message: "Password didn't match with password confirmation");
             } 
 
             try {
@@ -68,9 +68,9 @@ class SignUpController extends Controller
                 return ResponseFactory::create(500)(message: "Failed to save");
             } 
                     
-            return ResponseFactory::create(401)(message: "Invalid data");
+            return ResponseFactory::create(400)(message: "Invalid data");
         } 
 
-        return ResponseFactory::create(401)(message: "Fields shouldn't be empty");
+        return ResponseFactory::create(400)(message: "Fields shouldn't be empty");
     }
 }

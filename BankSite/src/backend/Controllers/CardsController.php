@@ -72,14 +72,13 @@ class CardsController extends Controller
                 // Maybe log it to some file
                 var_dump($e->getMessage());
 
-                return ResponseFactory::create(500)(message: "Failed to save");
+                return ResponseFactory::create(500)(message: "Failed to register a card");
             } 
 
             $cardInfo = $this->card->getById($this->card->getLatestId());
             return ResponseFactory::create(200)(data: $cardInfo);
         }
 
-        return ResponseFactory::create(401)(message: "Fields shouldn't be empty");
-        
+        return ResponseFactory::create(400)();
     }
 }
