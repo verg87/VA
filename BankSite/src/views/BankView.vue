@@ -32,11 +32,11 @@ const closeModal = () => {
 };
 
 const createCard = async () => {
-    const data = {};
-
-    data["user_id"] = user.value["id"];
-    data["card_type"] = newCard.value.type;
-    data["amount"] = newCard.value.amount;
+    const data = {
+        "user_id": user.value.id,
+        "card_type": user.value.type,
+        "amount": user.value.amount
+    };
     
     try {
         await axios.post("/api/bank/cards", {data});
@@ -67,18 +67,18 @@ const createCard = async () => {
     try {
         if (!user.value) {
             user.value = (await axios.post("/api/users/")).data.data;
-            console.log(user.value);
         }
     } catch (err) {
         isError.value = true;
     }
     
     isLoading.value = false;
-})();
 
-(async () => {
     try {
-        cards.value = await axios.get("/api/bank/cards", {data: {"user_id": user.value["user_id"]}});
+        const data = {"user_id": user.value.id};
+        cards.value = (await axios.get("/api/bank/cards", {params: data})).data.data;
+
+        console.log(cards.value);
     } catch (err) {
     }
 })();

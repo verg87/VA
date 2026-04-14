@@ -35,7 +35,9 @@ class CardsController extends Controller
 
     private function get(ServerRequestInterface $request): ResponseInterface
     {
-        list("data" => $query) = $this->requestInfo($request);
+        list("query" => $query) = $this->requestInfo($request);
+        var_dump(isset($query));
+        var_dump($query);
         $userId = $query["user_id"];
 
         if ($userId !== "") {
