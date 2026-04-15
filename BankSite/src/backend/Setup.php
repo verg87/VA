@@ -58,6 +58,7 @@ try {
             FOREIGN KEY (user_id) REFERENCES users(id) 
             ON DELETE CASCADE
     )";
+    //ALTER TABLE cards ADD COLUMN card_number VARCHAR(16) UNIQUE NOT NULL, ADD COLUMN expires_at DATE NOT NULL
 
     $pdo->exec($createUsersTableSql);
     $pdo->exec($createCardsTableSql);

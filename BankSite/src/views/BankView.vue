@@ -124,11 +124,20 @@ const logOutUser = async () => {
         </div>
         <div v-show="cards">
             <div v-for="(card, index) in cards" class="cards-box">
-                <div :key="index">{{ card["card_type"] }}</div>
+                <div class="card-item">
+                    <div class="card-header">
+                        <h3 class="card-type">{{ card.card_type }}</h3>
+                        <!-- logo here -->
+                    </div>
+                    <div class="card-number">{{ card.card_number || '**** **** **** 1234' }}</div>
+                    <div class="card-details">
+                        <div class="card-balance">Balance: ${{ card.amount ? card.amount.toFixed(2) : '0.00' }}</div>
+                        <div class="card-expiry">Expires: {{ card.expires_at || '12/24' }}</div>
+                    </div>
+                </div>
             </div>
         </div>
 
-        <!-- Card Creation Modal -->
         <div v-if="showCardCreationModal" class="modal-overlay">
             <div class="modal-container">
                 <div class="modal-header">

@@ -100,4 +100,40 @@
     .modal-create-btn:active {
         @apply bg-blue-800 scale-98;
     }
+
+    .cards-box {
+        @apply grid grid-cols-1 gap-4 p-4; /* Basic grid for cards */
+    }
+
+    .card-item {
+        @apply relative bg-linear-to-br from-blue-500 to-purple-600 text-white rounded-xl shadow-lg p-6 flex flex-col justify-between h-48; /* Modern card design */
+    }
+
+    .card-header {
+        @apply flex justify-between items-start;
+    }
+
+    .card-type {
+        @apply text-lg font-bold;
+    }
+
+    .card-logo {
+        @apply h-8 w-auto opacity-75; /* Adjust size and opacity for logo */
+    }
+
+    .card-number {
+        @apply text-2xl tracking-wider font-mono my-4; /* Stylish card number */
+    }
+
+    .card-details {
+        @apply flex justify-between items-center text-sm;
+    }
+
+    .card-balance {
+        @apply font-semibold;
+    }
+
+    .card-expiry {
+        @apply text-xs opacity-80;
+    }
 }
