@@ -19,6 +19,8 @@ const showCardCreationModal = ref(false);
 const newCard = ref({
     type: 'credit', // Default card type
     amount: 0,
+    card_number: '',
+    expires_at: '',
 });
 const isPrepaid = computed(() => newCard.value.type === 'prepaid');
 
@@ -28,14 +30,16 @@ const openModal = () => {
 
 const closeModal = () => {
     showCardCreationModal.value = false;
-    newCard.value = { type: 'credit', amount: 0 }; // Reset form on close
+    newCard.value = { type: 'credit', amount: 0, card_number: '', expires_at: '' }; // Reset form on close
 };
 
 const createCard = async () => {
     const data = {
         "user_id": user.value.id,
-        "card_type": user.value.type,
-        "amount": user.value.amount
+        "card_type": newCard.value.type,
+        "amount": newCard.value.amount,
+        "card_number": newCard.value.card_number,
+        "expires_at": newCard.value.expires_at,
     };
     
     try {
@@ -114,7 +118,7 @@ const logOutUser = async () => {
                 <button @click="logOutUser" class="logout-btn">Log Out</button>
             </div>
         </nav>
-        <div v-show="!cards" class="bank-dashboard">
+        <div v-if="!cards" class="bank-dashboard">
             <h1 class="text-3xl font-bold mb-4">Your Bank Dashboard</h1>
             <p class="text-xl">Welcome to your personal banking portal. Here you can manage your accounts, view transactions, and more.</p>
             <div class="card-create-container">
@@ -122,7 +126,7 @@ const logOutUser = async () => {
                 <button @click="openModal" class="card-create-btn">Create a card</button>
             </div>
         </div>
-        <div v-show="cards">
+        <div v-if="cards">
             <div v-for="(card, index) in cards" class="cards-box">
                 <div class="card-item">
                     <div class="card-header">
@@ -157,6 +161,14 @@ const logOutUser = async () => {
                     <div v-if="isPrepaid" class="form-group">
                         <label for="card-amount">Initial Amount:</label>
                         <input type="number" id="card-amount" v-model.number="newCard.amount" class="modal-input" min="0" />
+                    </div>
+                    <div class="form-group">
+                        <label for="card-number">Card Number:</label>
+                        <input type="text" id="card-number" v-model="newCard.card_number" class="modal-input" placeholder="**** **** **** ****" />
+                    </div>
+                    <div class="form-group">
+                        <label for="expires-at">Expiration Date (MM/YY):</label>
+                        <input type="text" id="expires-at" v-model="newCard.expires_at" class="modal-input" placeholder="MM/YY" />
                     </div>
                 </div>
                 <div class="modal-footer">

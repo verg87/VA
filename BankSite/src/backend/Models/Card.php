@@ -21,23 +21,27 @@ class Card extends Model
         $this->db->exec("USE bank");
     }
 
-    public function create(int $userId, string $cardType, int $amount = 0): bool
+    public function create(int $userId, string $cardNumber, string $cardType, int $amount = 0, int $expiresAt): bool
     {
         $userId = htmlspecialchars($userId . "");
+        $cardNumber = htmlspecialchars($cardNumber);
         $cardType = htmlspecialchars($cardType);
         $amount = htmlspecialchars($amount . "");
+        $expiresAt = htmlspecialchars($expiresAt . "");
 
-        if (!$userId || !$cardType || $amount === "") {
+        if (!$userId || !$cardNumber || !$cardType || $amount === "" || !$expiresAt) {
             return false;
         }
 
         $stmt = $this->db->prepare(
-            "INSERT INTO cards (user_id, card_type, amount) VALUES (:ui, :ct, :am)"
+            "INSERT INTO cards (user_id, card_number, card_type, amount, expires_at) VALUES (:ui, :cn, :ct, :am, :ea)"
         );
 
         $stmt->bindParam(":ui", $userId);
+        $stmt->bindParam(":cn", $cardNumber);
         $stmt->bindParam(":ct", $cardType);
         $stmt->bindParam(":am", $amount);
+        $stmt->bindParam(":ea", $expiresAt);
 
         return $stmt->execute();
     }

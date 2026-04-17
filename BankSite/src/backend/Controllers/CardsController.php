@@ -56,8 +56,10 @@ class CardsController extends Controller
         if (Functions::array_all($data, fn($value) => $value !== "")) {
             list(
                 "user_id" => $userId,
+                "card_number" => $cardNumber,
                 "card_type" => $cardType,
                 "amount" => $amount,
+                "expires_at" => $expiresAt
             ) = $data;
 
             if (ucfirst($cardType) !== CardTypes::Prepaid->name && $amount !== 0) {
@@ -65,7 +67,7 @@ class CardsController extends Controller
             }
 
             try {
-                if ($this->card->create($userId, $cardType, $amount)) {
+                if ($this->card->create($userId, $cardNumber, $cardType, $amount, $expiresAt)) {
                     return ResponseFactory::create(201)(message: "Successfully created banking card");
                 }
             } catch (\Throwable $e) {
