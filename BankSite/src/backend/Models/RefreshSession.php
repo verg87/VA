@@ -60,8 +60,7 @@ class RefreshSession extends Model
         $stmt = $this->db->prepare("DELETE FROM refresh_sessions WHERE jti IN ($placeholders)");
        
         foreach ($jtis as $index => $jti) {
-            $hashedJTI = hash("sha512", $jti);
-            $stmt->bindValue($index + 1, $hashedJTI);
+            $stmt->bindValue($index + 1, $jti);
         }
 
         $status = $stmt->execute(); 

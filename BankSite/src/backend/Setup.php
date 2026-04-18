@@ -51,10 +51,12 @@ try {
     $createCardsTableSql = "CREATE TABLE cards (
         id INT auto_increment PRIMARY KEY,
         user_id INT NOT NULL,
-        card_number VARCHAR(64) UNIQUE NOT NULL,
+        card_number CHAR(64) UNIQUE NOT NULL,
+        secret_key CHAR(44) UNIQUE NOT NULL,
         card_type CHAR(9) NOT NULL,
         amount INT NOT NULL,
         expires_at INT NOT NULL,
+        cvv INT NOT NULL,
 
         CONSTRAINT fk_user_cards 
             FOREIGN KEY (user_id) REFERENCES users(id) 

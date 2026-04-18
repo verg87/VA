@@ -7,6 +7,7 @@ namespace App\Models;
 require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 
 use App\Model;
+use Exception;
 
 class Card extends Model
 {
@@ -21,27 +22,61 @@ class Card extends Model
         $this->db->exec("USE bank");
     }
 
-    public function create(int $userId, string $cardNumber, string $cardType, int $amount = 0, int $expiresAt): bool
+    public function create(int $userId, string $cardNumber, string $cardType, int $amount = 0, string $expiresAt, string $cvv): bool
     {
         $userId = htmlspecialchars($userId . "");
         $cardNumber = htmlspecialchars($cardNumber);
         $cardType = htmlspecialchars($cardType);
         $amount = htmlspecialchars($amount . "");
-        $expiresAt = htmlspecialchars($expiresAt . "");
+        $expiresAt = htmlspecialchars($expiresAt);
+        $cvv = htmlspecialchars($cvv);
 
-        if (!$userId || !$cardNumber || !$cardType || $amount === "" || !$expiresAt) {
+        if (!$userId || !$cardNumber || !$cardType || $amount === "" || !$expiresAt || !$cvv) {
+            return false;
+        }
+
+        if (!is_numeric($userId) || !is_numeric(str_replace(" ", "", $cardNumber)) || !is_numeric($amount) || !is_numeric($cvv)) {
+            return false;
+        }
+
+        try {
+            list($month, $year) = explode("/", $expiresAt);
+
+            if (
+                !$month || !$year || 
+                !is_numeric($month) || !is_numeric($year) || 
+                strlen($month) !== 2 || strlen($year) !== 2
+            ) {
+                return false;
+            }
+
+            $fullYear = substr(date("Y"), 0, -2) . $year;
+            $expiresAt = mktime(0, 0, 0, (int) $month, 1, (int) $fullYear);
+        } catch (Exception $err) {
             return false;
         }
 
         $stmt = $this->db->prepare(
-            "INSERT INTO cards (user_id, card_number, card_type, amount, expires_at) VALUES (:ui, :cn, :ct, :am, :ea)"
+            "INSERT INTO cards (user_id, card_number, secret_key, card_type, amount, expires_at, cvv) VALUES (:ui, :cn, :sk, :ct, :am, :ea, :cv)"
         );
 
+        $algo = "aes-256-gcm";
+
+        $key = openssl_random_pseudo_bytes(openssl_cipher_key_length($algo));
+        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length($algo));
+        $cipherCardNumber = openssl_encrypt($cardNumber, $algo, $key, OPENSSL_RAW_DATA, $iv, $tag);
+        $encryptedCardNumber = base64_encode($iv . $tag . $cipherCardNumber);
+
+        $base64EncodedKey = base64_encode($key);
+
         $stmt->bindParam(":ui", $userId);
-        $stmt->bindParam(":cn", $cardNumber);
+        $stmt->bindParam(":cn", $encryptedCardNumber);
+        $stmt->bindParam(":sk", $base64EncodedKey);
         $stmt->bindParam(":ct", $cardType);
         $stmt->bindParam(":am", $amount);
         $stmt->bindParam(":ea", $expiresAt);
+        // For now $cvv is being stored as plain integer, it'll be changed
+        $stmt->bindParam(":cv", $cvv);
 
         return $stmt->execute();
     }

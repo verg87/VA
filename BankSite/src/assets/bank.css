@@ -79,6 +79,10 @@
         @apply block mb-2 font-semibold text-gray-700;
     }
 
+    .form-group-double {
+        @apply flex gap-4;
+    }
+
     .modal-select,
     .modal-input {
         @apply w-full p-2 border border-gray-300 rounded-md text-base focus:outline-none focus:ring-2 focus:ring-blue-500;
