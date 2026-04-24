@@ -39,6 +39,7 @@ const validateCardInfo = () => {
         || !/^\d{4}\s\d{4}\s\d{4}\s\d{4}$/.test(newCard.value.card_number)
         || !/^\d\d\/\d\d$/.test(newCard.value.expires_at)
         || !/^\d{3}$/.test(newCard.value.cvv)
+        || parseInt(newCard.value.cvv.slice(0, 2)) >= 13
     ) {
         return false;
     }

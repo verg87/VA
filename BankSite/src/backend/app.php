@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App;
 
 require __DIR__ . '\\..\\..\\vendor\\autoload.php';
-require_once __DIR__ . "\\Helpers\\DBInstance.php";
 
 ini_set('display_errors', 'stderr');
 
+use App\DB;
+use App\Config;
+use App\Vault\Vault;
+use Symfony\Component\Dotenv\Dotenv;
 use League\Route\Router;
 use Nyholm\Psr7\Response;
 use Nyholm\Psr7\Factory\Psr17Factory;
@@ -30,6 +33,13 @@ use App\Models\Card;
 use App\Models\RefreshSession;
 use App\Models\User;
 
+$dotenv = new Dotenv();
+$dotenv->overload(__DIR__ . "\\..\\..\\.env", __DIR__ . "\\..\\..\\.dev.env");
+
+$config = (new Config($_ENV))->config;
+$db = new DB($config);
+$vault = new Vault($config);
+
 $worker = Worker::create();
 
 $factory = new Psr17Factory();
@@ -37,15 +47,15 @@ $psr7 = new PSR7Worker($worker, $factory, $factory, $factory);
 
 $router = new Router();
 
-$router->get("/api/bank/cards", new CardsController(new Card()));
-$router->post("/api/bank/cards", new CardsController(new Card()));
+$router->get("/api/bank/cards", new CardsController(new Card($db, $vault)));
+$router->post("/api/bank/cards", new CardsController(new Card($db, $vault)));
 
-$router->post("/api/users/", new AccessUserController(new User()));
-$router->post("/api/users/sign-up", new SignUpController(new User()));
-$router->post("/api/users/login", new LoginController(new User()));
-$router->post("/api/users/auth", new AuthController(new User()));
-$router->post("/api/users/refresh-token", new RefreshTokenController(new RefreshSession()));
-$router->post("/api/users/log-out", new LogOutController(new RefreshSession()));
+$router->post("/api/users/", new AccessUserController(new User($db)));
+$router->post("/api/users/sign-up", new SignUpController(new User($db)));
+$router->post("/api/users/login", new LoginController(new User($db)));
+$router->post("/api/users/auth", new AuthController(new User($db)));
+$router->post("/api/users/refresh-token", new RefreshTokenController(new RefreshSession($db)));
+$router->post("/api/users/log-out", new LogOutController(new RefreshSession($db)));
 
 while (true) {
     try {

@@ -6,15 +6,20 @@ namespace App\Models;
 
 require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 
+use App\DB;
 use App\Model;
+use App\Vault\Vault;
 use Exception;
 
 class Card extends Model
 {
-    public function __construct()
+    private Vault $vault;
+
+    public function __construct(DB $db, Vault $vault)
     {
-        parent::__construct();
+        parent::__construct($db);
         $this->useBank();
+        $this->vault = $vault;
     }
 
     public function useBank(): void
@@ -67,11 +72,23 @@ class Card extends Model
         $cipherCardNumber = openssl_encrypt($cardNumber, $algo, $key, OPENSSL_RAW_DATA, $iv, $tag);
         $encryptedCardNumber = base64_encode($iv . $tag . $cipherCardNumber);
 
-        $base64EncodedKey = base64_encode($key);
+        $encodedKey = base64_encode($key);
+
+        $masterKey = $this->vault->getKV("masterkey")["data"]["data"]["key"] ?? "";
+
+        if ($masterKey === "") {
+            return false;
+        }
+
+        $decodedMasterKey = base64_decode($masterKey);
+
+        $keyIV = openssl_random_pseudo_bytes(openssl_cipher_iv_length($algo));
+        $cipherKey = openssl_encrypt($encodedKey, $algo, $decodedMasterKey, OPENSSL_RAW_DATA, $keyIV, $keyTag);
+        $encryptedKey = base64_encode($keyIV . $keyTag . $cipherKey);
 
         $stmt->bindParam(":ui", $userId);
         $stmt->bindParam(":cn", $encryptedCardNumber);
-        $stmt->bindParam(":sk", $base64EncodedKey);
+        $stmt->bindParam(":sk", $encryptedKey);
         $stmt->bindParam(":ct", $cardType);
         $stmt->bindParam(":am", $amount);
         $stmt->bindParam(":ea", $expiresAt);

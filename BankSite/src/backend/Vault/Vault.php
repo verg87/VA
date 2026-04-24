@@ -10,19 +10,50 @@ use App\Helpers\Functions;
 
 class Vault 
 {
-    protected bool $isUnsealed = false;
+    private array $unsealKeys = [];
+    private string $rootToken = "";
+    private bool $isUnsealed = false;
+    private string $path = "secret";
 
-    public function __construct(array $unsealKeys) 
+    public function __construct(array $config) 
     {
-        $this->unseal($unsealKeys);
+        $vaultConfig = $config["vault"];
+
+        $this->unsealKeys = [
+            $vaultConfig["unsealKey1"],
+            $vaultConfig["unsealKey2"],
+            $vaultConfig["unsealKey3"],
+        ];
+
+        $this->rootToken = $vaultConfig["rootToken"];
+
+        $this->unseal();
+        $this->enableKV();
     }
 
-    public function unseal(array $unsealKeys): bool 
+    public function enableKV(): array|null
+    {
+        $ch = curl_init("http://127.0.0.1:8200/v1/sys/mounts/" . $this->path);
+
+        $newMount = json_encode(["type" => "kv", "options" => ["version" => "2"]]);
+
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $newMount);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["X-Vault-Token: " . $this->rootToken]);
+
+        $output = curl_exec($ch);
+        $output = gettype($output) === "boolean" ? "" : $output;
+
+        return json_decode($output, true);
+    }
+
+    public function unseal(): bool|null
     {
         $results = [];
         $notEnoughKeys = false;
 
-        foreach ($unsealKeys as $key => $index) {
+        foreach ($this->unsealKeys as $index => $key) {
             $ch = curl_init("http://127.0.0.1:8200/v1/sys/unseal");
 
             curl_setopt($ch, CURLOPT_POST, 1);
@@ -30,10 +61,11 @@ class Vault
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(["key" => $key]));
 
             $output = curl_exec($ch);
-            $output = (array) json_decode($output);
+            $output = gettype($output) === "boolean" ? "" : $output;
+            $output = json_decode($output, true);
 
             if (
-                $index + 1 === count($unsealKeys) && 
+                $index + 1 === count($this->unsealKeys) && 
                 isset($output["sealed"]) && $output["sealed"] === false && 
                 isset($output["progress"]) && $output["progress"] === 0
             ) {
@@ -62,19 +94,32 @@ class Vault
         return false;
     }
 
-    public function get(string $secretName, string $rootToken): array
+    public function getKV(string $secretName): array|null
     {
-        if (!$this->isUnsealed) {
-            return [];
-        }
-        
         $ch = curl_init("http://127.0.0.1:8200/v1/secret/data/" . $secretName);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ["X-Vault-Token: " . $rootToken]);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["X-Vault-Token: " . $this->rootToken]);
 
         $output = curl_exec($ch);
-        $output = json_decode($output);
+        $output = gettype($output) === "boolean" ? "" : $output;
 
-        return (array) $output;
+        return json_decode($output, true);
+    }
+    
+    public function setKV(string $secretName, string $key, string $value): array|null
+    {     
+        $ch = curl_init("http://127.0.0.1:8200/v1/secret/data/" . $secretName);
+
+        $newSecret = json_encode(["data" => [$key => $value]]);
+
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $newSecret);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ["X-Vault-Token: " . $this->rootToken]);
+
+        $output = curl_exec($ch);
+        $output = gettype($output) === "boolean" ? "" : $output;
+
+        return json_decode($output, true);
     }
 }

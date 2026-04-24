@@ -18,11 +18,13 @@ class DB
         ];
 
         try {
+            $dbConfig = $config["db"];
+
             $this->pdo = new PDO(
-                $config['driver'] . ':host=' . $config['host'],
-                $config['user'],
-                $config['pass'],
-                $config['options'] ?? $defaultOptions
+                $dbConfig['driver'] . ':host=' . $dbConfig['host'],
+                $dbConfig['user'],
+                $dbConfig['pass'],
+                $dbConfig['options'] ?? $defaultOptions
             );
         } catch (\PDOException $e) {
             throw new \PDOException($e->getMessage(), (int) $e->getCode());

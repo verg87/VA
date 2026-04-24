@@ -13,6 +13,9 @@ use Symfony\Component\Dotenv\Dotenv;
 use App\Models\RefreshSession;
 use App\Helpers\JWTLiveTime;
 
+use App\DB;
+use App\Config;
+
 $dotenv = new Dotenv();
 
 $dotenv->overload(__DIR__ . "\\..\\..\\..\\.dev.env");
@@ -47,7 +50,10 @@ class JWTHelper
         $payload = static::getJWT($userId, JWTLiveTime::RefreshToken->value);
 
         if (!$withoutCreation) {
-            $refreshSession = new RefreshSession();
+            $config = (new Config($_ENV))->config;
+            $db = new DB($config);
+            
+            $refreshSession = new RefreshSession($db);
             $refreshSession->create($userId, $payload["jti"], $userAgent, $ipAddress, $payload["exp"]);
         }
 

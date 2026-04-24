@@ -6,13 +6,14 @@ namespace App\Models;
 
 require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 
+use App\DB;
 use App\Model;
 
 class RefreshSession extends Model
 {
-    public function __construct()
+    public function __construct(DB $db)
     {
-        parent::__construct();
+        parent::__construct($db);
         $this->useBank();
     }
 

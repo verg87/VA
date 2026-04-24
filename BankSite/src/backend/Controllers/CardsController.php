@@ -77,9 +77,6 @@ class CardsController extends Controller
 
                 return ResponseFactory::create(500)(message: "Failed to register a card");
             } 
-
-            $cardInfo = $this->card->getById($this->card->getLatestId());
-            return ResponseFactory::create(200)(data: $cardInfo);
         }
 
         return ResponseFactory::create(400)();

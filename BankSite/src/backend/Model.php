@@ -10,8 +10,8 @@ abstract class Model
 {
     protected DB $db;
 
-    public function __construct()
+    public function __construct(DB $db)
     {
-        $this->db = DBI;
+        $this->db = $db;
     }
 }
