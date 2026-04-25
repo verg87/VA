@@ -94,7 +94,7 @@ class Vault
         return false;
     }
 
-    public function getKV(string $secretName): array|null
+    public function getKV(string $secretName): string|null
     {
         $ch = curl_init("http://127.0.0.1:8200/v1/secret/data/" . $secretName);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -103,10 +103,10 @@ class Vault
         $output = curl_exec($ch);
         $output = gettype($output) === "boolean" ? "" : $output;
 
-        return json_decode($output, true);
+        return json_decode($output, true)["data"]["data"]["key"] ?? null;
     }
     
-    public function setKV(string $secretName, string $key, string $value): array|null
+    public function setKV(string $secretName, string $key, string $value): bool
     {     
         $ch = curl_init("http://127.0.0.1:8200/v1/secret/data/" . $secretName);
 
@@ -120,6 +120,8 @@ class Vault
         $output = curl_exec($ch);
         $output = gettype($output) === "boolean" ? "" : $output;
 
-        return json_decode($output, true);
+        $response = json_decode($output, true);
+
+        return $response && !isset($response["errors"]) && isset($response["data"]);
     }
 }

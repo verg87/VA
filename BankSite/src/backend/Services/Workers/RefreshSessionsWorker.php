@@ -7,7 +7,7 @@ namespace App\Services\Workers;
 use App\Services\Workers\Worker;
 use App\Models\RefreshSession;
 
-class RefreshSessionsCleanerWorker extends Worker
+class RefreshSessionsWorker extends Worker
 {
     private RefreshSession $refreshSession;
 
@@ -17,7 +17,7 @@ class RefreshSessionsCleanerWorker extends Worker
         parent::__construct('refresh_sessions_cleaner', 60 * 60 * 24);
     }
 
-    public function work(): void
+    public function work(): bool
     {
         $sessions = $this->refreshSession->getAll();
         $jtisToDelete = [];
@@ -36,8 +36,11 @@ class RefreshSessionsCleanerWorker extends Worker
             $this->log("No expired refresh tokens to delete");
         } else if ($status === "failure") {
             $this->log("Unable to remove " . count($jtisToDelete) . " expired refresh tokens");
+            return false;
         } else if ($status === "success" && $deleted !== 0) {
             $this->log("Removed " . $deleted . " out of " . count($jtisToDelete) . " expired refresh tokens");
         }
+
+        return true;
     }
 }

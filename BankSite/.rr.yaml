@@ -24,7 +24,11 @@ service:
     refresh_sessions_cleaner:
         command: "php src/backend/Services/RefreshSessionsCleaner.php"
         process_num: 1
-        timeout_stop_sec: 60
+        timeout_stop_sec: 300
+    master_key_rotator:
+        command: "php src/backend/Services/MasterKeyRotator.php"
+        process_num: 1
+        timeout_stop_sec: 1200
 jobs:
     pool:
         num_workers: 2

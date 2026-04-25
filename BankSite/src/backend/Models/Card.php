@@ -74,9 +74,9 @@ class Card extends Model
 
         $encodedKey = base64_encode($key);
 
-        $masterKey = $this->vault->getKV("masterkey")["data"]["data"]["key"] ?? "";
+        $masterKey = $this->vault->getKV("masterkey");
 
-        if ($masterKey === "") {
+        if (!$masterKey || $masterKey === "") {
             return false;
         }
 
@@ -137,5 +137,52 @@ class Card extends Model
         $stmt->execute();
 
         return $stmt->fetchAll();
+    }
+
+    public function getSecretKeys(): array
+    {
+        $stmt = $this->db->prepare(
+            "SELECT secret_key FROM cards"
+        );
+
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    public function updateSecretKey(int $id, string $newSecretKey): bool
+    {
+        $stmt = $this->db->prepare(
+            "UPDATE cards SET secret_key = :sk WHERE id = :id"
+        );
+
+        $stmt->bindParam(":sk", $newSecretKey);
+        $stmt->bindParam(":id", $id);
+        
+        return $stmt->execute();
+    }
+
+    public function updateSecretKeys(array $secretKeys): bool
+    {
+        $this->db->beginTransaction();
+
+        foreach ($secretKeys as $index => $key) {
+            if (!$this->updateSecretKey($index + 1, $key)) {
+                $this->db->rollBack();
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public function commit(): bool
+    {
+        return $this->db->commit();
+    }
+
+    public function rollBack(): bool
+    {
+        return $this->db->rollBack();
     }
 }
