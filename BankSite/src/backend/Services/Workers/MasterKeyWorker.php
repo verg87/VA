@@ -24,31 +24,32 @@ class MasterKeyWorker extends Worker
     {
         $this->log("Starting master key rotation");
 
+        $algo = $_ENV["ENVELOPE_ENCRYPTION_ALGO"];
+
+        $taglen = (int) $_ENV["TAG_LENGTH"];
+        $ivlen = openssl_cipher_iv_length($algo);
+
         $oldMasterKey = $this->vault->getKV("masterkey");
-        $newMasterKey = base64_encode(openssl_random_pseudo_bytes(32));
+        $newMasterKey = base64_encode(openssl_random_pseudo_bytes(openssl_cipher_key_length($algo)));
 
         $oldEncryptedSecretKeys = $this->card->getSecretKeys();
-        $oldDecryptedSecretKeys = [];
-
+        
         $newEncryptedSecretKeys = [];
-
+        
         foreach ($oldEncryptedSecretKeys as $key) {
             $decoded = base64_decode($key["secret_key"]);
 
-            $iv = substr($decoded, 0, 12);
-            $tag = substr($decoded, 12, 16);
-            $cipherKey = substr($decoded, 28);
+            $iv = substr($decoded, 0, $ivlen);
+            $tag = substr($decoded, $ivlen, $taglen);
+            $cipherKey = substr($decoded, $ivlen + $taglen);
 
-            $decryptedSecretKey = openssl_decrypt($cipherKey, "aes-256-gcm", base64_decode($oldMasterKey), OPENSSL_RAW_DATA, $iv, $tag);
-            $oldDecryptedSecretKeys[] = $decryptedSecretKey;
-        }
-
-        foreach ($oldDecryptedSecretKeys as $decryptedKey) {
-            $iv = openssl_random_pseudo_bytes(12);
-            $cipherKey = openssl_encrypt($decryptedKey, "aes-256-gcm", base64_decode($newMasterKey), OPENSSL_RAW_DATA, $iv, $tag);
+            $decryptedSecretKey = openssl_decrypt($cipherKey, $algo, base64_decode($oldMasterKey), OPENSSL_RAW_DATA, $iv, $tag);
+            
+            $iv = openssl_random_pseudo_bytes($ivlen);
+            $cipherKey = openssl_encrypt($decryptedSecretKey, $algo, base64_decode($newMasterKey), OPENSSL_RAW_DATA, $iv, $tag, "", $taglen);
             $encodedKey = base64_encode($iv . $tag . $cipherKey);
 
-            $newEncryptedSecretKeys[] = $encodedKey;
+            $newEncryptedSecretKeys[] = ["id" => $key["id"], "key" => $encodedKey];
         }
 
         if ($this->card->updateSecretKeys($newEncryptedSecretKeys)) {

@@ -65,11 +65,12 @@ class Card extends Model
             "INSERT INTO cards (user_id, card_number, secret_key, card_type, amount, expires_at, cvv) VALUES (:ui, :cn, :sk, :ct, :am, :ea, :cv)"
         );
 
-        $algo = "aes-256-gcm";
+        $algo = $_ENV['ENVELOPE_ENCRYPTION_ALGO'];
+        $taglen = (int) $_ENV["TAG_LENGTH"];
 
         $key = openssl_random_pseudo_bytes(openssl_cipher_key_length($algo));
         $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length($algo));
-        $cipherCardNumber = openssl_encrypt($cardNumber, $algo, $key, OPENSSL_RAW_DATA, $iv, $tag);
+        $cipherCardNumber = openssl_encrypt($cardNumber, $algo, $key, OPENSSL_RAW_DATA, $iv, $tag, "", $taglen);
         $encryptedCardNumber = base64_encode($iv . $tag . $cipherCardNumber);
 
         $encodedKey = base64_encode($key);
@@ -83,7 +84,7 @@ class Card extends Model
         $decodedMasterKey = base64_decode($masterKey);
 
         $keyIV = openssl_random_pseudo_bytes(openssl_cipher_iv_length($algo));
-        $cipherKey = openssl_encrypt($encodedKey, $algo, $decodedMasterKey, OPENSSL_RAW_DATA, $keyIV, $keyTag);
+        $cipherKey = openssl_encrypt($encodedKey, $algo, $decodedMasterKey, OPENSSL_RAW_DATA, $keyIV, $keyTag, "", $taglen);
         $encryptedKey = base64_encode($keyIV . $keyTag . $cipherKey);
 
         $stmt->bindParam(":ui", $userId);
@@ -142,7 +143,7 @@ class Card extends Model
     public function getSecretKeys(): array
     {
         $stmt = $this->db->prepare(
-            "SELECT secret_key FROM cards"
+            "SELECT id, secret_key FROM cards"
         );
 
         $stmt->execute();
@@ -166,8 +167,8 @@ class Card extends Model
     {
         $this->db->beginTransaction();
 
-        foreach ($secretKeys as $index => $key) {
-            if (!$this->updateSecretKey($index + 1, $key)) {
+        foreach ($secretKeys as $secret) {
+            if (!$this->updateSecretKey($secret['id'], $secret['key'])) {
                 $this->db->rollBack();
                 return false;
             }
