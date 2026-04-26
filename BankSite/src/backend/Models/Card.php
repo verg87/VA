@@ -69,11 +69,9 @@ class Card extends Model
         $taglen = (int) $_ENV["TAG_LENGTH"];
 
         $key = openssl_random_pseudo_bytes(openssl_cipher_key_length($algo));
-        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length($algo));
-        $cipherCardNumber = openssl_encrypt($cardNumber, $algo, $key, OPENSSL_RAW_DATA, $iv, $tag, "", $taglen);
-        $encryptedCardNumber = base64_encode($iv . $tag . $cipherCardNumber);
-
-        $encodedKey = base64_encode($key);
+      
+        $encryptedCardNumber = $this->encrypt($cardNumber, $key, $algo, $taglen);
+        $encryptedCVV = $this->encrypt($cvv, $key, $algo, $taglen);
 
         $masterKey = $this->vault->getKV("masterkey");
 
@@ -81,11 +79,10 @@ class Card extends Model
             return false;
         }
 
+        $encodedKey = base64_encode($key);
         $decodedMasterKey = base64_decode($masterKey);
 
-        $keyIV = openssl_random_pseudo_bytes(openssl_cipher_iv_length($algo));
-        $cipherKey = openssl_encrypt($encodedKey, $algo, $decodedMasterKey, OPENSSL_RAW_DATA, $keyIV, $keyTag, "", $taglen);
-        $encryptedKey = base64_encode($keyIV . $keyTag . $cipherKey);
+        $encryptedKey = $this->encrypt($encodedKey, $decodedMasterKey, $algo, $taglen);
 
         $stmt->bindParam(":ui", $userId);
         $stmt->bindParam(":cn", $encryptedCardNumber);
@@ -93,10 +90,16 @@ class Card extends Model
         $stmt->bindParam(":ct", $cardType);
         $stmt->bindParam(":am", $amount);
         $stmt->bindParam(":ea", $expiresAt);
-        // For now $cvv is being stored as plain integer, it'll be changed
-        $stmt->bindParam(":cv", $cvv);
+        $stmt->bindParam(":cv", $encryptedCVV);
 
         return $stmt->execute();
+    }
+
+    private function encrypt(string $data, string $key, string $algo, int $taglen): string
+    {
+        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length($algo));
+        $cipherText = openssl_encrypt($data, $algo, $key, OPENSSL_RAW_DATA, $iv, $tag, "", $taglen);
+        return base64_encode($iv . $tag . $cipherText);
     }
 
     public function getLatestId(): int

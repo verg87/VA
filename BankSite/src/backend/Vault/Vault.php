@@ -96,7 +96,7 @@ class Vault
 
     public function getKV(string $secretName): string|null
     {
-        $ch = curl_init("http://127.0.0.1:8200/v1/secret/data/" . $secretName);
+        $ch = curl_init("http://127.0.0.1:8200/v1/" . $this->path . "/data/" . $secretName);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_HTTPHEADER, ["X-Vault-Token: " . $this->rootToken]);
 
@@ -108,7 +108,7 @@ class Vault
     
     public function setKV(string $secretName, string $key, string $value): bool
     {     
-        $ch = curl_init("http://127.0.0.1:8200/v1/secret/data/" . $secretName);
+        $ch = curl_init("http://127.0.0.1:8200/v1/" . $this->path . "/data/" . $secretName);
 
         $newSecret = json_encode(["data" => [$key => $value]]);
 

@@ -25,8 +25,8 @@ class MasterKeyWorker extends Worker
         $this->log("Starting master key rotation");
 
         $algo = $_ENV["ENVELOPE_ENCRYPTION_ALGO"];
-
         $taglen = (int) $_ENV["TAG_LENGTH"];
+        
         $ivlen = openssl_cipher_iv_length($algo);
 
         $oldMasterKey = $this->vault->getKV("masterkey");

@@ -55,8 +55,8 @@ try {
         secret_key CHAR(96) UNIQUE NOT NULL,
         card_type CHAR(9) NOT NULL,
         amount INT NOT NULL,
-        expires_at INT NOT NULL,
-        cvv INT NOT NULL,
+        expires_at BIGINT NOT NULL,
+        cvv CHAR(44) NOT NULL,
 
         CONSTRAINT fk_user_cards 
             FOREIGN KEY (user_id) REFERENCES users(id) 
