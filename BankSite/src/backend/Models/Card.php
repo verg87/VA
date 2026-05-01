@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
+require_once __DIR__ . "/../../../vendor/autoload.php";
 
 use App\DB;
 use App\Model;
 use App\Vault\Vault;
+
+use DateTimeImmutable;
 use Exception;
+use InvalidArgumentException;
 
 class Card extends Model
 {
@@ -18,81 +21,100 @@ class Card extends Model
     public function __construct(DB $db, Vault $vault)
     {
         parent::__construct($db);
-        $this->useBank();
         $this->vault = $vault;
     }
 
-    public function useBank(): void
+    /**
+     * @throws InvalidArgumentException|Exception
+     */
+    private function validateCardCreationArgs(int $userId, string $cardNumber, string $cardType, int $amount, string $expiresAt, string $cvv): array
     {
-        $this->db->exec("USE bank");
+        $validatedUserId = filter_var($userId, FILTER_VALIDATE_INT);
+        if ($validatedUserId === false) {
+            throw new InvalidArgumentException("Invalid User ID.");
+        }
+
+        if (!preg_match("/^\d{4} \d{4} \d{4} \d{4}$/", $cardNumber)) {
+            throw new InvalidArgumentException("Invalid card number format.");
+        }
+
+        if (!in_array($cardType, ["debit", "credit", "overdraft", "prepaid"])) {
+            throw new InvalidArgumentException("Invalid card type.");
+        }
+
+        $validatedAmount = filter_var($amount, FILTER_VALIDATE_INT, [
+            "options" => ["min_range" => 0, "max_range" => 1000000]
+        ]);
+        if ($validatedAmount === false) {
+            throw new InvalidArgumentException("Invalid amount.");
+        }
+
+        $validatedCvv = filter_var($cvv, FILTER_VALIDATE_INT, [
+            "options" => ["min_range" => 100, "max_range" => 999]
+        ]);
+        if ($validatedCvv === false) {
+            throw new InvalidArgumentException("Invalid CVV.");
+        }
+
+        try {
+            $expiresAtDate = DateTimeImmutable::createFromFormat('m/y', $expiresAt);
+            if ($expiresAtDate === false) {
+                throw new InvalidArgumentException('Invalid expiration date format. Use "mm/yy".');
+            }
+            $expiresAtTimestamp = $expiresAtDate->modify('last day of this month')->getTimestamp();
+        } catch (Exception $e) {
+            throw new InvalidArgumentException('Error processing expiration date: ' . $e->getMessage());
+        }
+
+        return [
+            "user_id" => $validatedUserId,
+            "card_number" => $cardNumber,
+            "card_type" => $cardType,
+            "amount" => $validatedAmount,
+            "expires_at" => $expiresAtTimestamp,
+            "cvv" => (string)$validatedCvv,
+        ];
     }
 
     public function create(int $userId, string $cardNumber, string $cardType, int $amount = 0, string $expiresAt, string $cvv): bool
     {
-        $userId = htmlspecialchars($userId . "");
-        $cardNumber = htmlspecialchars($cardNumber);
-        $cardType = htmlspecialchars($cardType);
-        $amount = htmlspecialchars($amount . "");
-        $expiresAt = htmlspecialchars($expiresAt);
-        $cvv = htmlspecialchars($cvv);
-
-        if (!$userId || !$cardNumber || !$cardType || $amount === "" || !$expiresAt || !$cvv) {
-            return false;
-        }
-
-        if (!is_numeric($userId) || !is_numeric(str_replace(" ", "", $cardNumber)) || !is_numeric($amount) || !is_numeric($cvv)) {
-            return false;
-        }
-
         try {
-            list($month, $year) = explode("/", $expiresAt);
+            $validatedData = $this->validateCardCreationArgs($userId, $cardNumber, $cardType, $amount, $expiresAt, $cvv);
 
-            if (
-                !$month || !$year || 
-                !is_numeric($month) || !is_numeric($year) || 
-                strlen($month) !== 2 || strlen($year) !== 2
-            ) {
-                return false;
+            $algo = $_ENV['ENVELOPE_ENCRYPTION_ALGO'];
+            $taglen = (int) $_ENV["TAG_LENGTH"];
+
+            $dataKey = openssl_random_pseudo_bytes(openssl_cipher_key_length($algo));
+
+            $encryptedCardNumber = $this->encrypt($validatedData['card_number'], $dataKey, $algo, $taglen);
+            $encryptedCVV = $this->encrypt($validatedData['cvv'], $dataKey, $algo, $taglen);
+
+            $masterKey = $this->vault->getKV("masterkey");
+            if (!$masterKey) {
+                throw new Exception("Could not retrieve master key from Vault.");
             }
+            $decodedMasterKey = base64_decode($masterKey);
 
-            $fullYear = substr(date("Y"), 0, -2) . $year;
-            $expiresAt = mktime(0, 0, 0, (int) $month, 1, (int) $fullYear);
-        } catch (Exception $err) {
+            $encryptedDataKey = $this->encrypt(base64_encode($dataKey), $decodedMasterKey, $algo, $taglen);
+
+            $stmt = $this->db->prepare(
+                "INSERT INTO cards (user_id, card_number, secret_key, card_type, amount, expires_at, cvv) VALUES (:ui, :cn, :sk, :ct, :am, :ea, :cv)"
+            );
+
+            return $stmt->execute([
+                ':ui' => $validatedData['user_id'],
+                ':cn' => $encryptedCardNumber,
+                ':sk' => $encryptedDataKey,
+                ':ct' => $validatedData['card_type'],
+                ':am' => $validatedData['amount'],
+                ':ea' => $validatedData['expires_at'],
+                ':cv' => $encryptedCVV
+            ]);
+        } catch (Exception $e) {
+            // maybe log it
+            var_dump($e->getMessage());
             return false;
         }
-
-        $stmt = $this->db->prepare(
-            "INSERT INTO cards (user_id, card_number, secret_key, card_type, amount, expires_at, cvv) VALUES (:ui, :cn, :sk, :ct, :am, :ea, :cv)"
-        );
-
-        $algo = $_ENV['ENVELOPE_ENCRYPTION_ALGO'];
-        $taglen = (int) $_ENV["TAG_LENGTH"];
-
-        $key = openssl_random_pseudo_bytes(openssl_cipher_key_length($algo));
-      
-        $encryptedCardNumber = $this->encrypt($cardNumber, $key, $algo, $taglen);
-        $encryptedCVV = $this->encrypt($cvv, $key, $algo, $taglen);
-
-        $masterKey = $this->vault->getKV("masterkey");
-
-        if (!$masterKey || $masterKey === "") {
-            return false;
-        }
-
-        $encodedKey = base64_encode($key);
-        $decodedMasterKey = base64_decode($masterKey);
-
-        $encryptedKey = $this->encrypt($encodedKey, $decodedMasterKey, $algo, $taglen);
-
-        $stmt->bindParam(":ui", $userId);
-        $stmt->bindParam(":cn", $encryptedCardNumber);
-        $stmt->bindParam(":sk", $encryptedKey);
-        $stmt->bindParam(":ct", $cardType);
-        $stmt->bindParam(":am", $amount);
-        $stmt->bindParam(":ea", $expiresAt);
-        $stmt->bindParam(":cv", $encryptedCVV);
-
-        return $stmt->execute();
     }
 
     private function encrypt(string $data, string $key, string $algo, int $taglen): string
@@ -107,40 +129,56 @@ class Card extends Model
         return (int) $this->db->lastInsertId();
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
+    private function validateId(int $id): string
+    {
+        if (filter_var($id, FILTER_VALIDATE_INT) === false) {
+            throw new InvalidArgumentException("Passed ID is not an integer");
+        }
+        
+        return filter_var($id, FILTER_SANITIZE_NUMBER_INT);
+    }
+
     public function getById(int $id): array|bool
     {
-        $id = htmlspecialchars($id . "");
+        try {
+            $id = $this->validateId($id);
 
-        if (!$id || !is_numeric($id)) {
+            $stmt = $this->db->prepare(
+                "SELECT * FROM cards WHERE id = :id"
+            );
+
+            $stmt->bindParam(":id", $id);
+            $stmt->execute();
+
+            return $stmt->fetch();
+        } catch (Exception $e) {
+            // maybe log it
+            var_dump($e->getMessage());
             return false;
         }
-
-        $stmt = $this->db->prepare(
-            "SELECT * FROM cards WHERE id = :id"
-        );
-
-        $stmt->bindParam(":id", $id);
-        $stmt->execute();
-
-        return $stmt->fetch();
     }
 
     public function getByUserId(int $userId): array|bool
     {
-        $userId = htmlspecialchars($userId . "");
+        try {
+            $userId = $this->validateId($userId);
 
-        if (!$userId) {
+            $stmt = $this->db->prepare(
+                "SELECT * FROM cards WHERE user_id = :ui"
+            );
+
+            $stmt->bindParam(":ui", $userId);
+            $stmt->execute();
+
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
+            // maybe log it
+            var_dump($e->getMessage());
             return false;
         }
-
-        $stmt = $this->db->prepare(
-            "SELECT * FROM cards WHERE user_id = :ui"
-        );
-
-        $stmt->bindParam(":ui", $userId);
-        $stmt->execute();
-
-        return $stmt->fetchAll();
     }
 
     public function getSecretKeys(): array
@@ -156,14 +194,22 @@ class Card extends Model
 
     public function updateSecretKey(int $id, string $newSecretKey): bool
     {
-        $stmt = $this->db->prepare(
-            "UPDATE cards SET secret_key = :sk WHERE id = :id"
-        );
+        try {
+            $id = $this->validateId($id);
 
-        $stmt->bindParam(":sk", $newSecretKey);
-        $stmt->bindParam(":id", $id);
-        
-        return $stmt->execute();
+            $stmt = $this->db->prepare(
+                "UPDATE cards SET secret_key = :sk WHERE id = :id"
+            );
+
+            $stmt->bindParam(":sk", $newSecretKey);
+            $stmt->bindParam(":id", $id);
+
+            return $stmt->execute();
+        } catch (Exception $e) {
+            // maybe log it
+            var_dump($e->getMessage());
+            return false;
+        }
     }
 
     public function updateSecretKeys(array $secretKeys): bool

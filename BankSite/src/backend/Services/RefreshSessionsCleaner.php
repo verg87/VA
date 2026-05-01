@@ -18,7 +18,7 @@ $dotenv = new Dotenv();
 $dotenv->overload(__DIR__ . "\\..\\..\\..\\.env", __DIR__ . "\\..\\..\\..\\.dev.env");
 
 $config = (new Config($_ENV))->config;
-$db = new DB($config);
+$db = DB::getInstance($config);
 
 $worker = new RefreshSessionsWorker(new RefreshSession($db));
 $worker->run();

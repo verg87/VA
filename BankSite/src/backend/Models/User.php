@@ -14,12 +14,6 @@ class User extends Model
     public function __construct(DB $db)
     {
         parent::__construct($db);
-        $this->useBank();
-    }
-
-    public function useBank(): void
-    {
-        $this->db->exec("USE bank");
     }
 
     public function create(string $firstName, string $lastName, string $email, string $phoneNumber, string $password): bool

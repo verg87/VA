@@ -13,5 +13,6 @@ abstract class Model
     public function __construct(DB $db)
     {
         $this->db = $db;
+        $this->db->exec("USE " . $this->db->name);
     }
 }

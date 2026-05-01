@@ -20,7 +20,7 @@ $dotenv = new Dotenv();
 $dotenv->overload(__DIR__ . "\\..\\..\\..\\.env", __DIR__ . "\\..\\..\\..\\.dev.env");
 
 $config = (new Config($_ENV))->config;
-$db = new DB($config);
+$db = DB::getInstance($config);
 $vault = new Vault($config);
 
 $worker = new MasterKeyWorker($vault, new Card($db, $vault));

@@ -14,23 +14,16 @@ class RefreshSession extends Model
     public function __construct(DB $db)
     {
         parent::__construct($db);
-        $this->useBank();
-    }
-
-    public function useBank(): void
-    {
-        $this->db->exec("USE bank");
     }
 
     public function create(
-        int $userId, string $jti, string $userAgent, string $ipAddress, int $expiresAt
-    ): bool
-    {
-        $userAgent = htmlspecialchars($userAgent);
-        $ipAddress = htmlspecialchars($ipAddress);
-        $expiresAt = htmlspecialchars($expiresAt . "");
-
-        if (!$userId || !$jti || !$userAgent || !$ipAddress || !$expiresAt) {
+        int $userId,
+        string $jti,
+        string $userAgent,
+        string $ipAddress,
+        int $expiresAt
+    ): bool {
+        if (empty($userId) || empty($jti) || empty($userAgent) || empty($ipAddress) || empty($expiresAt)) {
             return false;
         }
 
@@ -38,9 +31,10 @@ class RefreshSession extends Model
             "INSERT INTO refresh_sessions (user_id, jti, user_agent, ip_address, expires_at) VALUES (:ui, :ji, :ua, :ia, :ea)"
         );
 
-        $hashedJTI = hash("sha512", $jti);
-        $hashedUserAgent = hash("sha512", $userAgent);
-        $hashedIpAddress = hash("sha512", $ipAddress);
+        $secretKey = $_ENV['APP_KEY'];
+        $hashedJTI = hash_hmac("sha512", $jti, $secretKey);
+        $hashedUserAgent = hash_hmac("sha512", $userAgent, $secretKey);
+        $hashedIpAddress = hash_hmac("sha512", $ipAddress, $secretKey);
 
         $stmt->bindParam(":ui", $userId);
         $stmt->bindParam(":ji", $hashedJTI);
@@ -56,15 +50,15 @@ class RefreshSession extends Model
         if (empty($jtis)) {
             return ["status" => "success", "deleted" => 0];
         }
-        
+
         $placeholders = implode(', ', array_fill(0, count($jtis), '?'));
         $stmt = $this->db->prepare("DELETE FROM refresh_sessions WHERE jti IN ($placeholders)");
-       
+
         foreach ($jtis as $index => $jti) {
             $stmt->bindValue($index + 1, $jti);
         }
 
-        $status = $stmt->execute(); 
+        $status = $stmt->execute();
         $numOfDeleted = $stmt->rowCount();
 
         return ["status" => $status ? "success" : "failure", "deleted" => $numOfDeleted];
@@ -80,17 +74,26 @@ class RefreshSession extends Model
 
     public function get(string $jti): array|bool
     {
+        if (empty($jti)) {
+            return false;
+        }
+
         $stmt = $this->db->prepare("SELECT * FROM refresh_sessions WHERE jti = :jti");
 
-        $hashedJTI = hash("sha512", $jti);
+        $secretKey = $_ENV['APP_KEY'];
+        $hashedJTI = hash_hmac("sha512", $jti, $secretKey);
         $stmt->bindParam(":jti", $hashedJTI);
 
         $stmt->execute();
         return $stmt->fetch();
     }
 
-    public function deleteByUserId(string $userId): bool
+    public function deleteByUserId(int $userId): bool
     {
+        if (empty($userId)) {
+            return false;
+        }
+
         $stmt = $this->db->prepare("DELETE FROM refresh_sessions WHERE user_id = :ui");
         $stmt->bindParam(":ui", $userId);
 
@@ -99,12 +102,17 @@ class RefreshSession extends Model
 
     public function update(string $jti): bool
     {
+        if (empty($jti)) {
+            return false;
+        }
+
         $stmt = $this->db->prepare("UPDATE refresh_sessions SET is_revoked = 1 WHERE jti = :ji");
 
-        $hashedJTI = hash("sha512", $jti);
+        $secretKey = $_ENV['APP_KEY'];
+        $hashedJTI = hash_hmac("sha512", $jti, $secretKey);
         $stmt->bindParam(":ji", $hashedJTI);
 
         $stmt->execute();
-        return $stmt->rowCount() > 0; 
+        return $stmt->rowCount() > 0;
     }
 }

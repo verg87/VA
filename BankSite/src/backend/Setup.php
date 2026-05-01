@@ -14,8 +14,8 @@ $dotenv->overload(__DIR__ . "\\..\\..\\.env", __DIR__ . "\\..\\..\\.dev.env");
 // This script will set up the database and initial tables.
 
 try {
-    $pdo = new DB((new Config($_ENV))->config);
-    $dbname = $pdo->config["database"];
+    $pdo = DB::getInstance((new Config($_ENV))->config);
+    $dbname = $pdo->name;
 
     $pdo->exec("CREATE DATABASE $dbname CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
     
