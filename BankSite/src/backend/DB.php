@@ -10,8 +10,6 @@ use PDO;
 class DB
 {
     private static array $instances = [];
-    private static array $lastConfig = [];
-    private static array $connectedDBs = [];
 
     final private function __construct(private PDO $pdo, public string $name) {}
 
@@ -24,9 +22,6 @@ class DB
 
         try {
             $dbConfig = $config["db"];
-            
-            // Store the last used config
-            static::$lastConfig = $dbConfig; 
 
             return new PDO(
                 $dbConfig['driver'] . ':host=' . $dbConfig['host'],
@@ -49,11 +44,9 @@ class DB
 
         if (
             !isset(static::$instances[$name]) ||
-            !isset(static::$connectedDBs[$name]) || 
-            (isset(static::$instances[$name]) && !static::ping()) 
+            (isset(static::$instances[$name]) && !static::ping($name)) 
         ) {
             static::reconnect($config);
-            static::$connectedDBs[$name] = true;
         }
 
         return (new static(static::$instances[$name], $name));
@@ -64,24 +57,15 @@ class DB
         try {
             return call_user_func_array([$this->pdo, $name], $arguments);
         } catch (\PDOException $e) {
-            // connection error
-            if (str_contains($e->getMessage(), "SQLSTATE[HY000]")) { 
-                static::reconnect(static::$lastConfig);
-                return call_user_func_array([$this->pdo, $name], $arguments);
-            }
+            // log it somewhere
+            var_dump($e->getMessage());
             throw $e; 
         }
     }
 
-    private static function ping(): bool
+    private static function ping(string $name): bool
     {
         try {
-            $name = static::$lastConfig["database"] ?? "";
-
-            if (empty($name)) {
-                throw new Exception("Database name not specified");
-            }
-
             static::$instances[$name]->query('SELECT 1');
             return true;
         } catch (\PDOException $e) {
@@ -91,11 +75,7 @@ class DB
 
     private static function reconnect(array $config): void
     {
-        $name = $config["db"]["database"] ?? "";
-
-        if (empty($name)) {
-            throw new \InvalidArgumentException("Database name must be specified in the configuration");
-        }
+        $name = $config["db"]["database"];
 
         static::$instances[$name] = static::createPDO($config); 
     }

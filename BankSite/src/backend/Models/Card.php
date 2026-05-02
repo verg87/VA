@@ -29,37 +29,51 @@ class Card extends Model
      */
     private function validateCardCreationArgs(int $userId, string $cardNumber, string $cardType, int $amount, string $expiresAt, string $cvv): array
     {
-        $validatedUserId = filter_var($userId, FILTER_VALIDATE_INT);
-        if ($validatedUserId === false) {
-            throw new InvalidArgumentException("Invalid User ID.");
-        }
+        $validatedUserId = $this->validateId($userId);
 
         if (!preg_match("/^\d{4} \d{4} \d{4} \d{4}$/", $cardNumber)) {
-            throw new InvalidArgumentException("Invalid card number format.");
+            throw new InvalidArgumentException("Invalid card number format");
         }
 
         if (!in_array($cardType, ["debit", "credit", "overdraft", "prepaid"])) {
-            throw new InvalidArgumentException("Invalid card type.");
+            throw new InvalidArgumentException("Invalid card type");
         }
 
         $validatedAmount = filter_var($amount, FILTER_VALIDATE_INT, [
             "options" => ["min_range" => 0, "max_range" => 1000000]
         ]);
         if ($validatedAmount === false) {
-            throw new InvalidArgumentException("Invalid amount.");
+            throw new InvalidArgumentException("Invalid amount");
         }
 
-        $validatedCvv = filter_var($cvv, FILTER_VALIDATE_INT, [
-            "options" => ["min_range" => 100, "max_range" => 999]
-        ]);
-        if ($validatedCvv === false) {
-            throw new InvalidArgumentException("Invalid CVV.");
+        try {
+            list($firstNumber, $secondNumber, $thirdNumber) = str_split($cvv);
+
+            $validatedFirstNumber = filter_var($firstNumber, FILTER_VALIDATE_INT, [
+                "options" => ["min_range" => 0, "max_range" => 9]
+            ]);
+
+            $validatedSecondNumber = filter_var($secondNumber, FILTER_VALIDATE_INT, [
+                "options" => ["min_range" => 0, "max_range" => 9]
+            ]);
+
+            $validatedThirdNumber = filter_var($thirdNumber, FILTER_VALIDATE_INT, [
+                "options" => ["min_range" => 0, "max_range" => 9]
+            ]);
+
+            if ($validatedFirstNumber === false || $validatedSecondNumber === false || $validatedThirdNumber === false) {
+                throw new InvalidArgumentException("Invalid CVV");
+            }
+
+            $validatedCvv = $validatedFirstNumber . $validatedSecondNumber . $validatedThirdNumber;
+        } catch (Exception $e) {
+            throw new InvalidArgumentException("Invalid CVV");
         }
 
         try {
             $expiresAtDate = DateTimeImmutable::createFromFormat('m/y', $expiresAt);
             if ($expiresAtDate === false) {
-                throw new InvalidArgumentException('Invalid expiration date format. Use "mm/yy".');
+                throw new InvalidArgumentException('Invalid expiration date format. Use "mm/yy"');
             }
             $expiresAtTimestamp = $expiresAtDate->modify('last day of this month')->getTimestamp();
         } catch (Exception $e) {
@@ -72,7 +86,7 @@ class Card extends Model
             "card_type" => $cardType,
             "amount" => $validatedAmount,
             "expires_at" => $expiresAtTimestamp,
-            "cvv" => (string)$validatedCvv,
+            "cvv" => $validatedCvv,
         ];
     }
 
@@ -102,13 +116,13 @@ class Card extends Model
             );
 
             return $stmt->execute([
-                ':ui' => $validatedData['user_id'],
-                ':cn' => $encryptedCardNumber,
-                ':sk' => $encryptedDataKey,
-                ':ct' => $validatedData['card_type'],
-                ':am' => $validatedData['amount'],
-                ':ea' => $validatedData['expires_at'],
-                ':cv' => $encryptedCVV
+                ":ui" => $validatedData["user_id"],
+                ":cn" => $encryptedCardNumber,
+                ":sk" => $encryptedDataKey,
+                ":ct" => $validatedData["card_type"],
+                ":am" => $validatedData["amount"],
+                ":ea" => $validatedData["expires_at"],
+                ":cv" => $encryptedCVV
             ]);
         } catch (Exception $e) {
             // maybe log it
@@ -132,13 +146,15 @@ class Card extends Model
     /**
      * @throws InvalidArgumentException
      */
-    private function validateId(int $id): string
+    private function validateId(int $id): int
     {
-        if (filter_var($id, FILTER_VALIDATE_INT) === false) {
+        $validatedId = filter_var($id, FILTER_VALIDATE_INT);
+
+        if ($validatedId === false) {
             throw new InvalidArgumentException("Passed ID is not an integer");
         }
         
-        return filter_var($id, FILTER_SANITIZE_NUMBER_INT);
+        return $validatedId;
     }
 
     public function getById(int $id): array|bool

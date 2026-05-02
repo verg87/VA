@@ -51,7 +51,7 @@ class JWTHelper
 
         if (!$withoutCreation) {
             $config = (new Config($_ENV))->config;
-            $db = new DB($config);
+            $db = DB::getInstance($config);
             
             $refreshSession = new RefreshSession($db);
             $refreshSession->create($userId, $payload["jti"], $userAgent, $ipAddress, $payload["exp"]);

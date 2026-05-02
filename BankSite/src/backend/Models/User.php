@@ -9,6 +9,9 @@ require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 use App\DB;
 use App\Model;
 
+use InvalidArgumentException;
+use Exception;
+
 class User extends Model
 {
     public function __construct(DB $db)
@@ -16,30 +19,55 @@ class User extends Model
         parent::__construct($db);
     }
 
-    public function create(string $firstName, string $lastName, string $email, string $phoneNumber, string $password): bool
+    private function validateUserCreationArgs(string $firstName, string $lastName, string $email, string $phoneNumber, string $password): array
     {
-        $firstName = htmlspecialchars($firstName);
-        $lastName = htmlspecialchars($lastName);
-        $email = htmlspecialchars($email);
-        $phoneNumber = htmlspecialchars($phoneNumber);
-
-        if (!$email || !$firstName || !$lastName || !$phoneNumber || $password === "") {
-            return false;
+        if (!preg_match("/^[a-zA-Z]{2,}$/", $firstName)) {
+            throw new InvalidArgumentException("Invalid name");
         }
 
-        $pwdHash = password_hash($password, PASSWORD_DEFAULT);
+        if (!preg_match("/^[a-zA-Z]{2,}$/", $lastName)) {
+            throw new InvalidArgumentException("Invalid lastname");
+        }
 
-        $stmt = $this->db->prepare(
-            "INSERT INTO users (first_name, last_name, email, phone_number, password) VALUES (:first_name, :last_name, :email, :phone_number, :password)"
-        );
+        $validatedEmail = filter_var($email, FILTER_VALIDATE_EMAIL);
 
-        $stmt->bindParam(":first_name", $firstName);
-        $stmt->bindParam(":last_name", $lastName);
-        $stmt->bindParam(":email", $email);
-        $stmt->bindParam(":phone_number", $phoneNumber);
-        $stmt->bindParam(":password", $pwdHash);
+        if ($validatedEmail === false) {
+            throw new InvalidArgumentException("Invalid email");
+        }
 
-        return $stmt->execute();
+        $validatedPhoneNumber = $this->validatePhone($phoneNumber);
+
+        return [
+            "firstName" => $firstName,
+            "lastName" => $lastName,
+            "email" => $validatedEmail,
+            "phoneNumber" => $validatedPhoneNumber,
+            "password" => $password
+        ];
+    }
+
+    public function create(string $firstName, string $lastName, string $email, string $phoneNumber, string $password): bool
+    {
+        try {
+            $validatedData = $this->validateUserCreationArgs($firstName, $lastName, $email, $phoneNumber, $password);
+
+            $pwdHash = password_hash($validatedData["password"], PASSWORD_DEFAULT);
+
+            $stmt = $this->db->prepare(
+                "INSERT INTO users (first_name, last_name, email, phone_number, password) VALUES (:first_name, :last_name, :email, :phone_number, :password)"
+            );
+
+            $stmt->bindParam(":first_name", $validatedData["firstName"]);
+            $stmt->bindParam(":last_name", $validatedData["lastName"]);
+            $stmt->bindParam(":email", $validatedData["email"]);
+            $stmt->bindParam(":phone_number", $validatedData["phoneNumber"]);
+            $stmt->bindParam(":password", $pwdHash);
+
+            return $stmt->execute();
+        } catch (Exception $e) {
+            var_dump($e->getMessage());
+            return false;
+        }
     }
 
     public function getAll(): array
@@ -55,48 +83,93 @@ class User extends Model
         return (int) $this->db->lastInsertId();
     }
 
+    private function validateId(int $id): int
+    {
+        $validatedId = filter_var($id, FILTER_VALIDATE_INT);
+
+        if ($validatedId === false) {
+            throw new InvalidArgumentException("Passed ID is not an integer");
+        }
+        
+        return $validatedId;
+    }
+
     public function getById(int $userId): array|bool
     {
-        $userId = htmlspecialchars($userId . "");
+        try {
+            $userId = $this->validateId($userId);
 
-        if (!$userId || !is_numeric($userId)) {
+            $stmt = $this->db->prepare(
+                "SELECT * FROM users WHERE id = :ui"
+            );
+
+            $stmt->bindParam(":ui", $userId);
+            $stmt->execute();
+
+            return $stmt->fetch();
+        } catch (Exception $e) {
+            var_dump($e->getMessage());
             return false;
         }
+    }
 
-        $stmt = $this->db->prepare(
-            "SELECT * FROM users WHERE id = :ui"
-        );
+    private function validatePhone(string $phoneNumber): int
+    {
+        $validatedPhoneNumber = filter_var($phoneNumber, FILTER_VALIDATE_INT, [
+            "options" => ["min_range" => 2900000, "max_range" => 999999999999999]
+        ]);
 
-        $stmt->bindParam(":ui", $userId);
-        $stmt->execute();
+        if ($validatedPhoneNumber === false) {
+            throw new InvalidArgumentException("Invalid phone number");
+        }
 
-        return $stmt->fetch();
+        return $validatedPhoneNumber;
     }
 
     public function getByPhoneAndPWD(string $phoneNumber, string $password): array|bool
     {
-        $phoneNumber = htmlspecialchars($phoneNumber);
+        try {
+            $phoneNumber = $this->validatePhone($phoneNumber);
 
-        if (!$phoneNumber || !is_numeric($phoneNumber)) {
+            $stmt = $this->db->prepare(
+                "SELECT * FROM users WHERE phone_number = :phone_number"
+            );
+
+            $stmt->bindParam(":phone_number", $phoneNumber);
+
+            $stmt->execute();
+            $user = $stmt->fetch();
+
+            $hash = $user["password"];
+            $valid = password_verify($password, $hash);
+
+            return $valid ? $user : [];
+        } catch (Exception $e) {
+            var_dump($e->getMessage());
             return false;
         }
+    }
 
-        $stmt = $this->db->prepare(
-            "SELECT * FROM users WHERE phone_number = :phone_number"
-        );
+    public function rehashPwd(string $phoneNumber, string $password): bool
+    {
+        try {
+            $phoneNumber = $this->validatePhone($phoneNumber);
 
-        $stmt->bindParam(":phone_number", $phoneNumber);
+            $stmt = $this->db->prepare(
+                "SELECT * FROM users WHERE phone_number = :phone_number"
+            );
 
-        $stmt->execute();
-        $user = $stmt->fetch();
+            $stmt->bindParam(":phone_number", $phoneNumber);
 
-        $hash = $user["password"];
-        $valid = password_verify($password, $hash);
+            $stmt->execute();
+            $user = $stmt->fetch();
 
-        if ($valid) {
-            if (password_needs_rehash($hash, PASSWORD_DEFAULT)) {
+            $hash = $user["password"];
+            $valid = password_verify($password, $hash);
+
+            if ($valid && password_needs_rehash($hash, PASSWORD_DEFAULT)) {
                 $newHash = password_hash($password, PASSWORD_DEFAULT);
-                    
+                        
                 $stmt = $this->db->prepare(
                     "UPDATE users SET password = :new_password 
                     WHERE phone_number = :phone_number AND password = :password"
@@ -106,12 +179,13 @@ class User extends Model
                 $stmt->bindParam(":password", $hash);
                 $stmt->bindParam(":new_password", $newHash);
 
-                $stmt->execute();
+                return $stmt->execute();
             }
-                
-            return $user;
-        }
 
-        return [];
+            return false;
+        } catch (Exception $e) {
+            var_dump($e->getMessage());
+            return false;
+        }
     }
 }
