@@ -9,14 +9,18 @@ require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 use App\DB;
 use App\Model;
 
+use App\Vault\Vault;
 use Exception;
 use InvalidArgumentException;
 
 class RefreshSession extends Model
 {
-    public function __construct(DB $db)
+    private Vault $vault;
+
+    public function __construct(DB $db, Vault $vault)
     {
         parent::__construct($db);
+        $this->vault = $vault;
     }
 
     private function validateRefSessionCreationArgs(int $userId, string $jti, string $userAgent, string $ipAddress, int $expiresAt): array
@@ -57,10 +61,10 @@ class RefreshSession extends Model
                 "INSERT INTO refresh_sessions (user_id, jti, user_agent, ip_address, expires_at) VALUES (:ui, :ji, :ua, :ia, :ea)"
             );
 
-            $secretKey = $_ENV["REF_KEY"];
-            $hashedJTI = hash_hmac("sha512", $validatedData["jti"], $secretKey);
-            $hashedUserAgent = hash_hmac("sha512", $validatedData["userAgent"], $secretKey);
-            $hashedIpAddress = hash_hmac("sha512", $validatedData["ipAddress"], $secretKey);
+            $refkey = $this->vault->getKV("refkey");
+            $hashedJTI = hash_hmac("sha512", $validatedData["jti"], $refkey);
+            $hashedUserAgent = hash_hmac("sha512", $validatedData["userAgent"], $refkey);
+            $hashedIpAddress = hash_hmac("sha512", $validatedData["ipAddress"], $refkey);
 
             $stmt->bindParam(":ui", $validatedData["userId"]);
             $stmt->bindParam(":ji", $hashedJTI);
@@ -110,8 +114,8 @@ class RefreshSession extends Model
 
         $stmt = $this->db->prepare("SELECT * FROM refresh_sessions WHERE jti = :jti");
 
-        $secretKey = $_ENV["REF_KEY"];
-        $hashedJTI = hash_hmac("sha512", $jti, $secretKey);
+        $refkey = $this->vault->getKV("refkey");
+        $hashedJTI = hash_hmac("sha512", $jti, $refkey);
         $stmt->bindParam(":jti", $hashedJTI);
 
         $stmt->execute();
@@ -152,8 +156,8 @@ class RefreshSession extends Model
 
         $stmt = $this->db->prepare("UPDATE refresh_sessions SET is_revoked = 1 WHERE jti = :ji");
 
-        $secretKey = $_ENV["REF_KEY"];
-        $hashedJTI = hash_hmac("sha512", $jti, $secretKey);
+        $refkey = $this->vault->getKV("refkey");
+        $hashedJTI = hash_hmac("sha512", $jti, $refkey);
         $stmt->bindParam(":ji", $hashedJTI);
 
         $stmt->execute();

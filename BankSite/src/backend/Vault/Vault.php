@@ -29,6 +29,29 @@ class Vault
 
         $this->unseal();
         $this->enableKV();
+        $this->initializeKeys();
+    }
+
+    private function initializeKeys(): void
+    {
+        $masterkey = $this->getKV("masterkey");
+        $refkey = $this->getKV("refkey");
+
+        if (!$masterkey) {
+            $algo = $_ENV["ENVELOPE_ENCRYPTION_ALGO"];
+
+            $newMasterKey = base64_encode(
+                openssl_random_pseudo_bytes(openssl_cipher_key_length($algo))
+            );
+
+            $this->setKV("masterkey", $newMasterKey);
+        }
+
+        if (!$refkey) {
+            $newRefKey = base64_encode(openssl_random_pseudo_bytes(1024));
+
+            $this->setKV("refkey", $newRefKey);
+        }
     }
 
     public function enableKV(): array|null
@@ -106,11 +129,11 @@ class Vault
         return json_decode($output, true)["data"]["data"]["key"] ?? null;
     }
     
-    public function setKV(string $secretName, string $key, string $value): bool
+    public function setKV(string $secretName, string $value): bool
     {     
         $ch = curl_init("http://127.0.0.1:8200/v1/" . $this->path . "/data/" . $secretName);
 
-        $newSecret = json_encode(["data" => [$key => $value]]);
+        $newSecret = json_encode(["data" => ["key" => $value]]);
 
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);

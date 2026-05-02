@@ -54,8 +54,8 @@ $router->post("/api/users/", new AccessUserController(new User($db)));
 $router->post("/api/users/sign-up", new SignUpController(new User($db)));
 $router->post("/api/users/login", new LoginController(new User($db)));
 $router->post("/api/users/auth", new AuthController(new User($db)));
-$router->post("/api/users/refresh-token", new RefreshTokenController(new RefreshSession($db)));
-$router->post("/api/users/log-out", new LogOutController(new RefreshSession($db)));
+$router->post("/api/users/refresh-token", new RefreshTokenController(new RefreshSession($db, $vault)));
+$router->post("/api/users/log-out", new LogOutController(new RefreshSession($db, $vault)));
 
 while (true) {
     try {

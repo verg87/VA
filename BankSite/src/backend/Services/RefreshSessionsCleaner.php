@@ -12,6 +12,7 @@ use App\DB;
 use App\Config;
 
 use App\Services\Workers\RefreshSessionsWorker;
+use App\Vault\Vault;
 use App\Models\RefreshSession;
 
 $dotenv = new Dotenv();
@@ -19,6 +20,7 @@ $dotenv->overload(__DIR__ . "\\..\\..\\..\\.env", __DIR__ . "\\..\\..\\..\\.dev.
 
 $config = (new Config($_ENV))->config;
 $db = DB::getInstance($config);
+$vault = new Vault($config);
 
-$worker = new RefreshSessionsWorker(new RefreshSession($db));
+$worker = new RefreshSessionsWorker(new RefreshSession($db, $vault));
 $worker->run();

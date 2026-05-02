@@ -10,6 +10,7 @@ use Firebase\JWT\JWT;
 use Ramsey\Uuid\Uuid;
 use Symfony\Component\Dotenv\Dotenv;
 
+use App\Vault\Vault;
 use App\Models\RefreshSession;
 use App\Helpers\JWTLiveTime;
 
@@ -52,8 +53,9 @@ class JWTHelper
         if (!$withoutCreation) {
             $config = (new Config($_ENV))->config;
             $db = DB::getInstance($config);
+            $vault = new Vault($config);
             
-            $refreshSession = new RefreshSession($db);
+            $refreshSession = new RefreshSession($db, $vault);
             $refreshSession->create($userId, $payload["jti"], $userAgent, $ipAddress, $payload["exp"]);
         }
 
