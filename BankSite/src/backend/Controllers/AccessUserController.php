@@ -14,11 +14,12 @@ use Firebase\JWT\Key;
 
 use App\Controller;
 use App\Models\User;
+use App\Vault\Vault;
 use App\Responses\ResponseFactory;
 
 class AccessUserController extends Controller
 {
-    public function __construct(private User $user)
+    public function __construct(private User $user, private Vault $vault)
     {
     }
 
@@ -36,7 +37,7 @@ class AccessUserController extends Controller
         } 
 
         try {
-            $payload = (array) JWT::decode($cookie, new Key($_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]));
+            $payload = (array) JWT::decode($cookie, new Key($this->vault->getKV("jwtkey"), $_ENV["ALGORITHM"]));
         } catch (\Throwable $e) {
             return ResponseFactory::create(401)();
         }

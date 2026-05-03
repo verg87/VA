@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 
+use App\Vault\Vault;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -18,7 +19,7 @@ use App\Responses\ResponseFactory;
 
 class AuthController extends Controller
 {
-    public function __construct(private User $user)
+    public function __construct(private User $user, private Vault $vault)
     {
     }
 
@@ -36,7 +37,7 @@ class AuthController extends Controller
         } 
 
         try {
-            JWT::decode($cookie, new Key($_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]));
+            JWT::decode($cookie, new Key($this->vault->getKV("jwtkey"), $_ENV["ALGORITHM"]));
         } catch (\Throwable $e) {
             return ResponseFactory::create(401)();
         }

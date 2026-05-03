@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 
+use App\Vault\Vault;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -19,7 +20,7 @@ use App\Responses\ResponseFactory;
 
 class RefreshTokenController extends Controller
 {
-    public function __construct(private RefreshSession $refreshSession)
+    public function __construct(private RefreshSession $refreshSession, private Vault $vault)
     {
     }
 
@@ -39,7 +40,7 @@ class RefreshTokenController extends Controller
         } 
 
         try {
-            $payload = (array) JWT::decode($cookie, new Key($_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]));
+            $payload = (array) JWT::decode($cookie, new Key($this->vault->getKV("jwtkey"), $_ENV["ALGORITHM"]));
         } catch (\Throwable $e) {
             return ResponseFactory::create(401)();
         }

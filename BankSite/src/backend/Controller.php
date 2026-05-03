@@ -7,13 +7,14 @@ namespace App;
 require_once __DIR__ . "\\..\\..\\vendor\\autoload.php";
 
 use App\Model;
+use App\Vault\Vault;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Nyholm\Psr7\Response;
 
 abstract class Controller
 {
-    public function __construct(Model ...$models)
+    public function __construct(Model|Vault ...$models)
     {
     }
 

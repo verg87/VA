@@ -14,12 +14,13 @@ use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 
 use App\Controller;
+use App\Vault\Vault;
 use App\Helpers\CookieManager;
 use App\Responses\ResponseFactory;
 
 class LogOutController extends Controller
 {
-    public function __construct(private RefreshSession $refreshSession)
+    public function __construct(private RefreshSession $refreshSession, private Vault $vault)
     {
     }
 
@@ -39,7 +40,7 @@ class LogOutController extends Controller
         }
 
         try {
-            $payload = (array) JWT::decode($cookie, new Key($_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]));
+            $payload = (array) JWT::decode($cookie, new Key($this->vault->getKV("jwtkey"), $_ENV["ALGORITHM"]));
         } catch (\Throwable $e) {
             return ResponseFactory::create(401)();
         }

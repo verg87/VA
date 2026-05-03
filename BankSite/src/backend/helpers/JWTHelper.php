@@ -43,22 +43,26 @@ class JWTHelper
     {
         $payload = static::getJWT($userId, JWTLiveTime::AccessToken->value);
 
-        return JWT::encode($payload, $_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]);
+        $config = (new Config($_ENV))->config;
+        $vault = new Vault($config);
+
+        return JWT::encode($payload, $vault->getKV("jwtkey"), $_ENV["ALGORITHM"]);
     }
 
     static function getRefreshJWT(int $userId, string $userAgent, string $ipAddress, bool $withoutCreation): string
     {
         $payload = static::getJWT($userId, JWTLiveTime::RefreshToken->value);
 
+        $config = (new Config($_ENV))->config;
+        $vault = new Vault($config);
+
         if (!$withoutCreation) {
-            $config = (new Config($_ENV))->config;
             $db = DB::getInstance($config);
-            $vault = new Vault($config);
             
             $refreshSession = new RefreshSession($db, $vault);
             $refreshSession->create($userId, $payload["jti"], $userAgent, $ipAddress, $payload["exp"]);
         }
 
-        return JWT::encode($payload, $_ENV["SECRET_KEY"], $_ENV["ALGORITHM"]);
+        return JWT::encode($payload, $vault->getKV("jwtkey"), $_ENV["ALGORITHM"]);
     }
 }

@@ -36,6 +36,7 @@ class Vault
     {
         $masterkey = $this->getKV("masterkey");
         $refkey = $this->getKV("refkey");
+        $jwtkey = $this->getKV("jwtkey");
 
         if (!$masterkey) {
             $algo = $_ENV["ENVELOPE_ENCRYPTION_ALGO"];
@@ -51,6 +52,12 @@ class Vault
             $newRefKey = base64_encode(openssl_random_pseudo_bytes(1024));
 
             $this->setKV("refkey", $newRefKey);
+        }
+
+        if (!$jwtkey) {
+            $newJwtKey = base64_encode(openssl_random_pseudo_bytes(1024));
+
+            $this->setKV("jwtkey", $newJwtKey);
         }
     }
 
