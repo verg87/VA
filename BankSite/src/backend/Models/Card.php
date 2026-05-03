@@ -9,6 +9,7 @@ require_once __DIR__ . "/../../../vendor/autoload.php";
 use App\DB;
 use App\Model;
 use App\Vault\Vault;
+use App\Helpers\Functions;
 
 use DateTimeImmutable;
 use Exception;
@@ -157,6 +158,46 @@ class Card extends Model
         return $validatedId;
     }
 
+    private function decrypt(string $data, string $key, string $algo, int $taglen): string
+    {
+        $ivlen = openssl_cipher_iv_length($algo);
+
+        $data = base64_decode($data);
+
+        $iv = substr($data, 0, $ivlen);
+        $tag = substr($data, $ivlen, $taglen);
+        $cipherKey = substr($data, $ivlen + $taglen);
+
+        $res = openssl_decrypt($cipherKey, $algo, base64_decode($key), OPENSSL_RAW_DATA, $iv, $tag);
+
+        if (gettype($res) === "boolean") {
+            throw new Exception("Failed to decrypt data");
+        }
+
+        return $res;
+    }
+
+    private function formatCardData(array $cardInfo): array|bool
+    {
+        try {
+            $algo = $_ENV["ENVELOPE_ENCRYPTION_ALGO"];
+            $taglen = (int) $_ENV["TAG_LENGTH"];
+
+            $masterKey = $this->vault->getKV("masterkey");
+
+            $decryptedSecretKey = $this->decrypt($cardInfo["secret_key"], $masterKey, $algo, $taglen);
+            $decryptedCardNumber = $this->decrypt($cardInfo["card_number"], $decryptedSecretKey, $algo, $taglen);
+
+            $cardInfo["card_number"] = "**** **** **** " . Functions::array_last(explode(" ", $decryptedCardNumber));
+            $cardInfo["expires_at"] = date("m\/y", $cardInfo["expires_at"]);
+            unset($cardInfo["cvv"]);
+
+            return $cardInfo;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
     public function getById(int $id): array|bool
     {
         try {
@@ -189,8 +230,17 @@ class Card extends Model
             $stmt->bindParam(":ui", $userId);
             $stmt->execute();
 
-            return $stmt->fetchAll();
-        } catch (Exception $e) {
+            $cards = $stmt->fetchAll();
+            $formattedCards = [];
+
+            foreach ($cards as $card) {
+                $formattedCards[] = $this->formatCardData($card);
+            }
+
+            return Functions::array_all($formattedCards, fn($card) => gettype($card) === "array") 
+                ? $formattedCards 
+                : false;
+        } catch (\Throwable $e) {
             // maybe log it
             var_dump($e->getMessage());
             return false;

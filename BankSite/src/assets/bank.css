@@ -10,7 +10,7 @@
     }
 
     .bank-navbar {
-        @apply flex justify-between items-center p-4 bg-gray-100
+        @apply flex justify-between items-center px-8 py-4
     }
 
     .bank-nav-links {
@@ -110,7 +110,7 @@
     }
 
     .card-item {
-        @apply relative bg-linear-to-br from-blue-500 to-purple-600 text-white rounded-xl shadow-lg p-6 flex flex-col justify-between h-48; /* Modern card design */
+        @apply relative bg-linear-to-br from-blue-500 to-purple-600 text-white rounded-xl shadow-lg p-6 flex flex-col justify-between h-40; /* Modern card design */
     }
 
     .card-header {
@@ -122,11 +122,11 @@
     }
 
     .card-logo {
-        @apply h-8 w-auto opacity-75; /* Adjust size and opacity for logo */
+        @apply h-8 w-auto opacity-75; 
     }
 
     .card-number {
-        @apply text-2xl tracking-wider font-mono my-4; /* Stylish card number */
+        @apply text-2xl tracking-wider font-mono my-4;
     }
 
     .card-details {
@@ -140,4 +140,72 @@
     .card-expiry {
         @apply text-xs opacity-80;
     }
+}
+
+.dashboard-layout {
+    @apply flex h-screen bg-gray-50;
+}
+
+.dashboard-sidebar {
+    @apply w-64 bg-white shadow-md;
+}
+
+.sidebar-header {
+    @apply p-4 border-b;
+}
+
+.sidebar-logo {
+    @apply text-2xl font-bold text-blue-600;
+}
+
+.sidebar-nav {
+    @apply mt-4;
+}
+
+.sidebar-link {
+    @apply flex items-center px-4 py-3 text-gray-700 hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200;
+}
+
+.sidebar-link svg {
+    @apply mr-3 h-6 w-6;
+}
+
+.dashboard-main {
+    @apply flex-1 p-8 overflow-y-auto;
+}
+
+.dashboard-header {
+    @apply flex justify-between items-center mb-8;
+}
+
+.header-title {
+    @apply text-3xl font-bold text-gray-800;
+}
+
+.header-actions .btn {
+    @apply ml-4;
+}
+
+.btn {
+    @apply px-4 py-2 rounded-lg text-white font-semibold shadow-md transition-transform transform hover:scale-105;
+}
+
+.btn-primary {
+    @apply bg-blue-600 hover:bg-blue-700;
+}
+
+.btn-secondary {
+    @apply bg-gray-300 text-gray-800 hover:bg-gray-400;
+}
+
+.dashboard-grid {
+    @apply grid grid-cols-1 lg:grid-cols-3 gap-8;
+}
+
+.dashboard-card {
+    @apply bg-white rounded-lg shadow p-6;
+}
+
+.card-title {
+    @apply text-xl font-bold text-gray-800 mb-4;
 }

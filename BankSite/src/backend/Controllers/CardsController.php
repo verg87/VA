@@ -23,7 +23,7 @@ class CardsController extends Controller
 
     public function __invoke(ServerRequestInterface $request): ResponseInterface
     {
-        switch (strtoupper($request->getMethod())) {
+        switch ($request->getMethod()) {
             case "GET":
                 return $this->get($request);
             case "POST":
@@ -36,10 +36,9 @@ class CardsController extends Controller
     private function get(ServerRequestInterface $request): ResponseInterface
     {
         list("query" => $query) = $this->requestInfo($request);
-        $userId = $query["user_id"];
 
-        if ($userId !== "") {
-            $cardInfo = $this->card->getByUserId((int) $userId);
+        if (isset($query["user_id"]) && $query["user_id"] !== "") {
+            $cardInfo = $this->card->getByUserId((int) $query["user_id"]);
 
             if (gettype($cardInfo) === "array") {
                 return ResponseFactory::create(200)(data: $cardInfo);

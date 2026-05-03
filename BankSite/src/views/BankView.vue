@@ -6,6 +6,7 @@ import axios from "axios";
 
 import ServerErrorComponent from "@/components/ServerErrorComponent.vue";
 import SkeletonComponent from "@/components/SkeletonComponent.vue";
+import DashboardComponent from "@/components/DashboardComponent.vue";
 
 import "../assets/bank.css";
 
@@ -138,27 +139,16 @@ const logOutUser = async () => {
                 <button @click="logOutUser" class="logout-btn">Log Out</button>
             </div>
         </nav>
-        <div v-if="cards" class="bank-dashboard">
-            <h1 class="text-3xl font-bold mb-4">Your Bank Dashboard</h1>
-            <p class="text-xl">Welcome to your personal banking portal. Here you can manage your accounts, view transactions, and more.</p>
+
+        <!-- If user has cards, show the full dashboard -->
+        <DashboardComponent v-if="cards && cards.length > 0" :cards="cards" />
+
+        <!-- If user has no cards, show a welcome/creation message -->
+        <div v-if="!cards || cards.length === 0" class="bank-dashboard">
+            <h1 class="text-3xl font-bold mb-4">Welcome to Your Bank</h1>
+            <p class="text-xl">It looks like you don't have any cards yet. Let's fix that.</p>
             <div class="card-create-container">
-                <p class="text-lg">It seems like you don't have a card yet. Lets fix that</p>
                 <button @click="openModal" class="card-create-btn">Create a card</button>
-            </div>
-        </div>
-        <div v-if="!cards">
-            <div v-for="(card, index) in cards" class="cards-box">
-                <div class="card-item">
-                    <div class="card-header">
-                        <h3 class="card-type">{{ card.card_type }}</h3>
-                        <!-- logo here -->
-                    </div>
-                    <div class="card-number">{{ card.card_number || '**** **** **** 1234' }}</div>
-                    <div class="card-details">
-                        <div class="card-balance">Balance: ${{ card.amount ? card.amount.toFixed(2) : '0.00' }}</div>
-                        <div class="card-expiry">Expires: {{ card.expires_at || '12/24' }}</div>
-                    </div>
-                </div>
             </div>
         </div>
 

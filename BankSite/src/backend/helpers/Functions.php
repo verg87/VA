@@ -16,4 +16,9 @@ class Functions
         }
         return true;
     }
+
+    static function array_last(array $array): mixed
+    {
+        return $array ? $array[array_key_last($array)] : null;
+    }
 }
