@@ -10,7 +10,7 @@
     }
 
     .bank-navbar {
-        @apply flex justify-between items-center px-8 py-4
+        @apply flex justify-between items-center px-8 py-4 border-b border-gray-200 shadow-md
     }
 
     .bank-nav-links {
@@ -110,7 +110,7 @@
     }
 
     .card-item {
-        @apply relative bg-linear-to-br from-blue-500 to-purple-600 text-white rounded-xl shadow-lg p-6 flex flex-col justify-between h-40; /* Modern card design */
+        @apply relative bg-linear-to-br from-blue-500 to-purple-600 text-white rounded-xl shadow-lg p-6 flex flex-col justify-between h-36; /* Modern card design */
     }
 
     .card-header {
@@ -118,7 +118,7 @@
     }
 
     .card-type {
-        @apply text-lg font-bold;
+        @apply text-lg font-bold capitalize;
     }
 
     .card-logo {
@@ -143,7 +143,7 @@
 }
 
 .dashboard-layout {
-    @apply flex h-screen bg-gray-50;
+    @apply flex h-screen bg-blue-50;
 }
 
 .dashboard-sidebar {
@@ -151,7 +151,7 @@
 }
 
 .sidebar-header {
-    @apply p-4 border-b;
+    @apply p-4 border-b border-gray-400;
 }
 
 .sidebar-logo {
@@ -159,7 +159,7 @@
 }
 
 .sidebar-nav {
-    @apply mt-4;
+    @apply mt-4 border-r border-gray-200;
 }
 
 .sidebar-link {

@@ -16,6 +16,10 @@ const user = ref(null);
 const cards = ref(null);
 
 const showCardCreationModal = ref(false);
+const showTransferModal = ref(false);
+const showDepositModal = ref(false);
+const currentView = ref('dashboard');
+
 const newCard = ref({
     type: "credit",
     amount: 0,
@@ -25,13 +29,29 @@ const newCard = ref({
 });
 const isPrepaid = computed(() => newCard.value.type === "prepaid");
 
-const openModal = () => {
+const openCardCreaionModal = () => {
     showCardCreationModal.value = true;
 };
 
-const closeModal = () => {
+const closeCardCreationModal = () => {
     showCardCreationModal.value = false;
     newCard.value = { type: "credit", amount: 0, card_number: "", expires_at: "", cvv: "" }; 
+};
+
+const openTransferModal = () => {
+    showTransferModal.value = true;
+};
+
+const closeTransferModal = () => {
+    showTransferModal.value = false;
+};
+
+const openDepositModal = () => {
+    showDepositModal.value = true;
+};
+
+const closeDepositModal = () => {
+    showDepositModal.value = false;
 };
 
 const validateCardInfo = () => {
@@ -141,10 +161,19 @@ const logOutUser = async () => {
         </nav>
 
         <!-- If user has cards, show the full dashboard -->
-        <DashboardComponent v-if="cards && cards.length > 0" :cards="cards" />
+        <DashboardComponent 
+            v-if="cards && cards.length > 0" 
+            :cards="cards"
+            :currentView="currentView"
+            @view-transactions="currentView = 'transactions'"
+            @view-dashboard="currentView = 'dashboard'"
+            @open-transfer-modal="openTransferModal"
+            @open-deposit-modal="openDepositModal"
+            @open-card-creaion-modal="openCardCreaionModal"
+        />
 
         <!-- If user has no cards, show a welcome/creation message -->
-        <div v-if="!cards || cards.length === 0" class="bank-dashboard">
+        <div v-else class="bank-dashboard">
             <h1 class="text-3xl font-bold mb-4">Welcome to Your Bank</h1>
             <p class="text-xl">It looks like you don't have any cards yet. Let's fix that.</p>
             <div class="card-create-container">
@@ -156,7 +185,7 @@ const logOutUser = async () => {
             <div class="modal-container">
                 <div class="modal-header">
                     <h2 class="modal-title">Register your card</h2>
-                    <button @click="closeModal" class="modal-close-btn">&times;</button>
+                    <button @click="closeCardCreationModal" class="modal-close-btn">&times;</button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group">
@@ -189,6 +218,58 @@ const logOutUser = async () => {
                 </div>
                 <div class="modal-footer">
                     <button @click="createCard" class="modal-create-btn">Create</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transfer Money Modal -->
+        <div v-if="showTransferModal" class="modal-overlay">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h2 class="modal-title">Transfer Money</h2>
+                    <button @click="closeTransferModal" class="modal-close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Transfer money functionality will go here.</p>
+                    <div class="form-group">
+                        <label for="recipient-phone">Recipient Phone Number:</label>
+                        <input type="text" id="recipient-phone" class="modal-input" placeholder="e.g., +1234567890"/>
+                    </div>
+                    <div class="form-group">
+                        <label for="transfer-amount">Amount:</label>
+                        <input type="number" id="transfer-amount" class="modal-input" min="0.01" step="0.01" placeholder="e.g., 50.00"/>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button @click="closeTransferModal" class="btn btn-primary">Proceed Transfer</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deposit Money Modal -->
+        <div v-if="showDepositModal" class="modal-overlay">
+            <div class="modal-container">
+                <div class="modal-header">
+                    <h2 class="modal-title">Deposit Money</h2>
+                    <button @click="closeDepositModal" class="modal-close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Deposit money functionality will go here.</p>
+                    <div class="form-group">
+                        <label for="deposit-amount">Amount to Deposit:</label>
+                        <input type="number" id="deposit-amount" class="modal-input" min="0.01" step="0.01" placeholder="e.g., 100.00"/>
+                    </div>
+                    <div class="form-group">
+                        <label for="deposit-method">Method:</label>
+                        <select id="deposit-method" class="modal-select">
+                            <option value="bank">Bank Transfer</option>
+                            <option value="check">Check</option>
+                            <option value="cash">Cash (at ATM)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button @click="closeDepositModal" class="btn btn-primary">Confirm Deposit</button>
                 </div>
             </div>
         </div>
