@@ -10,12 +10,12 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
 use App\Helpers\Functions;
-use App\Helpers\CardTypes;
+use App\Helpers\DepositTypes;
 use App\Controller;
 use App\Models\Card;
 use App\Responses\ResponseFactory;
 
-class CardsController extends Controller
+class DepositController extends Controller
 {
     public function __construct(private Card $card)
     {
@@ -24,28 +24,11 @@ class CardsController extends Controller
     public function __invoke(ServerRequestInterface $request): ResponseInterface
     {
         switch ($request->getMethod()) {
-            case "GET":
-                return $this->get($request);
             case "POST":
                 return $this->post($request);
         }
 
         return ResponseFactory::create(405)();
-    }
-
-    private function get(ServerRequestInterface $request): ResponseInterface
-    {
-        list("query" => $query) = $this->requestInfo($request);
-
-        if (isset($query["user_id"]) && $query["user_id"] !== "") {
-            $cardInfo = $this->card->getByUserId((int) $query["user_id"]);
-
-            if (gettype($cardInfo) === "array") {
-                return ResponseFactory::create(200)(data: $cardInfo);
-            }
-        }
-
-        return ResponseFactory::create(400)();
     }
 
     private function post(ServerRequestInterface $request): ResponseInterface
@@ -56,21 +39,16 @@ class CardsController extends Controller
             list(
                 "user_id" => $userId,
                 "card_number" => $cardNumber,
-                "card_type" => $cardType,
-                "amount" => $amount,
-                "expires_at" => $expiresAt,
-                "cvv" => $cvv
+                "type" => $type,
+                "amount" => $amount
             ) = $data;
 
-            if (
-                !CardTypes::tryFrom($cardType) &&
-                $cardType !== CardTypes::Prepaid->value && $amount > 0
-            ) {
+            if (!DepositTypes::tryFrom($type) && $amount > 0) {
                 return ResponseFactory::create(400)();
             }
 
             try {
-                if ($this->card->create($userId, $cardNumber, $cardType, $amount, $expiresAt, $cvv)) {
+                if ($this->card->create($userId, $cardNumber, $type, $amount)) {
                     return ResponseFactory::create(201)(message: "Successfully created banking card");
                 }
             } catch (\Throwable $e) {

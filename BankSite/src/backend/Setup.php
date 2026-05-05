@@ -63,6 +63,22 @@ try {
             ON DELETE CASCADE
     )";
 
+    $createTransactionsTableSql = "CREATE TABLE cards (
+        id INT auto_increment PRIMARY KEY,
+        user_id INT NOT NULL,
+        receiver_card_number CHAR(64) NOT NULL,
+        receiver_phone_number CHAR(20) NOT NULL,
+        sender_card_number CHAR(64) NOT NULL,
+        sender_phone_number CHAR(20) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        type CHAR(8) NOT NULL,
+        amount INT NOT NULL,
+
+        CONSTRAINT fk_user_transactions 
+            FOREIGN KEY (user_id) REFERENCES users(id) 
+            ON DELETE CASCADE
+    )";
+
     $pdo->exec($createUsersTableSql);
     $pdo->exec($createCardsTableSql);
     $pdo->exec($createRefreshSessionsTableSql);

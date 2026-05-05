@@ -20,6 +20,7 @@ use Spiral\RoadRunner\Worker;
 use Spiral\RoadRunner\Http\PSR7Worker;
 
 use App\Controllers\CardsController;
+use App\Controllers\DepositController;
 
 use App\Controllers\AccessUserController;
 use App\Controllers\AuthController;
@@ -49,6 +50,8 @@ $router = new Router();
 
 $router->get("/api/bank/cards", new CardsController(new Card($db, $vault)));
 $router->post("/api/bank/cards", new CardsController(new Card($db, $vault)));
+
+$router->post("/api/bank/deposit", new DepositController(new Card($db, $vault)));
 
 $router->post("/api/users/", new AccessUserController(new User($db), $vault));
 $router->post("/api/users/sign-up", new SignUpController(new User($db)));

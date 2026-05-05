@@ -185,6 +185,8 @@ class Card extends Model
 
             $masterKey = $this->vault->getKV("masterkey");
 
+            $cardInfo["encrypted_card_number"] = $cardInfo["card_number"];
+
             $decryptedSecretKey = $this->decrypt($cardInfo["secret_key"], $masterKey, $algo, $taglen);
             $decryptedCardNumber = $this->decrypt($cardInfo["card_number"], $decryptedSecretKey, $algo, $taglen);
 

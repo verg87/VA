@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Helpers;
 
-enum CardTypes
+enum CardTypes: string
 {
-    case Debit;
-    case Credit;
-    case Overdraft;
-    case Prepaid;
+    case Debit = "debit";
+    case Credit = "credit";
+    case Overdraft = "overdraft";
+    case Prepaid = "prepaid";
 }

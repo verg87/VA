@@ -28,6 +28,13 @@ const newCard = ref({
     cvv: ""
 });
 const isPrepaid = computed(() => newCard.value.type === "prepaid");
+const getCardType = (card) => card.card_type.charAt(0).toUpperCase() + card.card_type.slice(1);
+
+const deposit = ref({
+    type: "",
+    amount: 0, 
+    card_number: ""
+});
 
 const openCardCreaionModal = () => {
     showCardCreationModal.value = true;
@@ -93,8 +100,29 @@ const createCard = async () => {
         }
     }
     
-    closeModal();
+    closeCardCreationModal();
 };
+
+const depositMoney = async () => {
+    const data = {
+        "user_id": user.value.id,
+        "type": deposit.value.type,
+        "amount": deposit.value.amount,
+        "card_number": deposit.value.card_number
+    };
+
+    try {
+        await axios.post("/api/bank/deposit", {data});
+    } catch (err) {
+        if (axios.isAxiosError(err) && err?.response?.data?.message) {
+            alert(err.response.data.message);
+        } else {
+            alert("Something went wrong...");
+        }
+    }
+
+    closeDepositModal();
+}
 
 
 (async () => {
@@ -160,7 +188,6 @@ const logOutUser = async () => {
             </div>
         </nav>
 
-        <!-- If user has cards, show the full dashboard -->
         <DashboardComponent 
             v-if="cards && cards.length > 0" 
             :cards="cards"
@@ -169,17 +196,8 @@ const logOutUser = async () => {
             @view-dashboard="currentView = 'dashboard'"
             @open-transfer-modal="openTransferModal"
             @open-deposit-modal="openDepositModal"
-            @open-card-creaion-modal="openCardCreaionModal"
+            @open-card-creation-modal="openCardCreaionModal"
         />
-
-        <!-- If user has no cards, show a welcome/creation message -->
-        <div v-else class="bank-dashboard">
-            <h1 class="text-3xl font-bold mb-4">Welcome to Your Bank</h1>
-            <p class="text-xl">It looks like you don't have any cards yet. Let's fix that.</p>
-            <div class="card-create-container">
-                <button @click="openModal" class="card-create-btn">Create a card</button>
-            </div>
-        </div>
 
         <div v-if="showCardCreationModal" class="modal-overlay">
             <div class="modal-container">
@@ -222,7 +240,6 @@ const logOutUser = async () => {
             </div>
         </div>
 
-        <!-- Transfer Money Modal -->
         <div v-if="showTransferModal" class="modal-overlay">
             <div class="modal-container">
                 <div class="modal-header">
@@ -230,7 +247,6 @@ const logOutUser = async () => {
                     <button @click="closeTransferModal" class="modal-close-btn">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <p>Transfer money functionality will go here.</p>
                     <div class="form-group">
                         <label for="recipient-phone">Recipient Phone Number:</label>
                         <input type="text" id="recipient-phone" class="modal-input" placeholder="e.g., +1234567890"/>
@@ -246,7 +262,6 @@ const logOutUser = async () => {
             </div>
         </div>
 
-        <!-- Deposit Money Modal -->
         <div v-if="showDepositModal" class="modal-overlay">
             <div class="modal-container">
                 <div class="modal-header">
@@ -254,14 +269,19 @@ const logOutUser = async () => {
                     <button @click="closeDepositModal" class="modal-close-btn">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <p>Deposit money functionality will go here.</p>
                     <div class="form-group">
                         <label for="deposit-amount">Amount to Deposit:</label>
-                        <input type="number" id="deposit-amount" class="modal-input" min="0.01" step="0.01" placeholder="e.g., 100.00"/>
+                        <input type="number" v-model.number="deposit.amount" id="deposit-amount" class="modal-input" min="0.01" step="0.01" placeholder="e.g., 100.00"/>
+                    </div>
+                    <div class="form-group">
+                        <label for="card-deposit">Choose card:</label>
+                        <select v-for="(card, index) in cards" v-model="deposit.card_number" id="card-deposit" class="modal-select">
+                            <option :value="`${card.encrypted_card_number}`" :key="index">{{ getCardType(card) }} ({{ card.card_number }})</option>
+                        </select>
                     </div>
                     <div class="form-group">
                         <label for="deposit-method">Method:</label>
-                        <select id="deposit-method" class="modal-select">
+                        <select v-model="deposit.type" id="deposit-method" class="modal-select">
                             <option value="bank">Bank Transfer</option>
                             <option value="check">Check</option>
                             <option value="cash">Cash (at ATM)</option>
@@ -269,7 +289,7 @@ const logOutUser = async () => {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button @click="closeDepositModal" class="btn btn-primary">Confirm Deposit</button>
+                    <button @click="depositMoney" class="btn btn-primary">Confirm Deposit</button>
                 </div>
             </div>
         </div>

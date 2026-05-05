@@ -6,7 +6,7 @@ const props = defineProps({
   currentView: String,
 });
 
-const emit = defineEmits(['view-transactions', 'view-dashboard', 'open-transfer-modal', 'open-deposit-modal']);
+const emit = defineEmits(['view-transactions', 'view-dashboard', 'open-transfer-modal', 'open-deposit-modal', 'open-card-creation-modal']);
 
 </script>
 
@@ -48,13 +48,26 @@ const emit = defineEmits(['view-transactions', 'view-dashboard', 'open-transfer-
       </header>
 
       <div v-if="props.currentView === 'dashboard'" class="dashboard-grid">
+        <div class="dashboard-section">
+           <div class="dashboard-card">
+            <h2 class="card-title">Register a card</h2>
+            <p class="text-gray-600 mb-4">Create your own credit card</p>
+            <h2 class="card-title mt-8">Actions</h2>
+            <button class="btn btn-primary w-full mb-4" @click="emit('open-card-creation-modal')">Create</button>
+          </div>
+           <div class="dashboard-card">
+            <h2 class="card-title">Bonuses</h2>
+            <p class="text-gray-600 mb-4">You have no active bonuses at the moment. Check back later!</p>
+            <h2 class="card-title mt-8">Actions</h2>
+            <button class="btn btn-primary w-full mb-4" @click="emit('open-deposit-modal')">Deposit Money</button>
+          </div>
+        </div>
         <div class="dashboard-card col-span-1 lg:col-span-2">
           <h2 class="card-title">Your Cards</h2>
           <div class="cards-box">
             <div v-for="(card, index) in cards" :key="index" class="card-item">
               <div class="card-header">
                   <h3 class="card-type">{{ card.card_type }}</h3>
-                  <!-- logo here -->
               </div>
               <div class="card-number">{{ card.card_number }}</div>
               <div class="card-details">
@@ -63,13 +76,6 @@ const emit = defineEmits(['view-transactions', 'view-dashboard', 'open-transfer-
               </div>
             </div>
           </div>
-        </div>
-
-        <div class="dashboard-card">
-          <h2 class="card-title">Bonuses</h2>
-          <p class="text-gray-600 mb-4">You have no active bonuses at the moment. Check back later!</p>
-          <h2 class="card-title mt-8">Actions</h2>
-          <button class="btn btn-primary w-full mb-4" @click="emit('open-deposit-modal')">Deposit Money</button>
         </div>
       </div>
 
