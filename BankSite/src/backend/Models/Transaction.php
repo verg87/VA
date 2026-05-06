@@ -15,30 +15,55 @@ use DateTimeImmutable;
 use Exception;
 use InvalidArgumentException;
 
-class Card extends Model
+class Transaction extends Model
 {
-    private Vault $vault;
-
-    public function __construct(DB $db, Vault $vault)
+    public function __construct(DB $db)
     {
         parent::__construct($db);
-        $this->vault = $vault;
     }
 
     /**
      * @throws InvalidArgumentException|Exception
      */
-    private function validateTransactionCreationArgs(int $userId, string $cardNumber, string $depositType, int $amount): array
+    private function validateTransactionCreationArgs(int $userId, int $cardId, string $depositType, int $amount): array
     {
-        return [];
+        $validatedUserId = $this->validateId($userId);
+        $validatedCardId = $this->validateId($cardId);
+
+        if (!in_array($depositType, ["transfer", "check", "cash"])) {
+            throw new InvalidArgumentException("Invalid deposit type");
+        }
+
+        $validatedAmount = filter_var($amount, FILTER_VALIDATE_INT, [
+            "options" => ["min_range" => 0, "max_range" => 100000]
+        ]);
+        if ($validatedAmount === false) {
+            throw new InvalidArgumentException("Deposit limit");
+        }
+
+        return [
+            "userId" => $validatedUserId,
+            "cardId" => $validatedCardId,
+            "depositType" => $depositType,
+            "amount" => $validatedAmount
+        ];
     }
 
-    public function create(int $userId, string $cardNumber, string $depositType, int $amount): bool
+    public function create(int $userId, int $cardId, string $depositType, int $amount): bool
     {
         try {
-            $validatedData = $this->validateTransactionCreationArgs($userId, $cardNumber, $depositType, $amount);
+            $validatedData = $this->validateTransactionCreationArgs($userId, $cardId, $depositType, $amount);
 
-            return false;
+            $stmt = $this->db->prepare(
+                "INSERT INTO transactions (user_id, receiver_card_id, type, amount) VALUES (:ui, :rci, :ty, :am)"
+            );
+
+            return $stmt->execute([
+                ":ui" => $validatedData["userId"],
+                ":rci" => $validatedData["cardId"],
+                ":ty" => $validatedData["depositType"],
+                ":am" => $validatedData["amount"],
+            ]);
         } catch (Exception $e) {
             // maybe log it
             var_dump($e->getMessage());

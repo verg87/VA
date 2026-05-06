@@ -66,13 +66,13 @@ class RefreshSession extends Model
             $hashedUserAgent = hash_hmac("sha512", $validatedData["userAgent"], $refkey);
             $hashedIpAddress = hash_hmac("sha512", $validatedData["ipAddress"], $refkey);
 
-            $stmt->bindParam(":ui", $validatedData["userId"]);
-            $stmt->bindParam(":ji", $hashedJTI);
-            $stmt->bindParam(":ua", $hashedUserAgent);
-            $stmt->bindParam(":ia", $hashedIpAddress);
-            $stmt->bindParam(":ea", $validatedData["expiresAt"]);
-
-            return $stmt->execute();
+            return $stmt->execute([
+                ":ui" => $validatedData["userId"],
+                ":ji" => $hashedJTI,
+                ":ua" => $hashedUserAgent,
+                ":ia" => $hashedIpAddress,
+                ":ea" => $validatedData["expiresAt"]
+            ]);
         } catch (Exception $e) {
             var_dump($e->getMessage());
             return false;
@@ -120,17 +120,6 @@ class RefreshSession extends Model
 
         $stmt->execute();
         return $stmt->fetch();
-    }
-
-    private function validateId(int $id): int
-    {
-        $validatedId = filter_var($id, FILTER_VALIDATE_INT);
-
-        if ($validatedId === false) {
-            throw new InvalidArgumentException("Passed ID is not an integer");
-        }
-        
-        return $validatedId;
     }
 
     public function deleteByUserId(int $userId): bool

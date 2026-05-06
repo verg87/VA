@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 
+use Exception;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -13,11 +14,12 @@ use App\Helpers\Functions;
 use App\Helpers\DepositTypes;
 use App\Controller;
 use App\Models\Card;
+use App\Models\Transaction;
 use App\Responses\ResponseFactory;
 
 class DepositController extends Controller
 {
-    public function __construct(private Card $card)
+    public function __construct(private Card $card, private Transaction $transaction)
     {
     }
 
@@ -38,7 +40,7 @@ class DepositController extends Controller
         if (Functions::array_all($data, fn($value) => $value !== "")) {
             list(
                 "user_id" => $userId,
-                "card_number" => $cardNumber,
+                "card_id" => $cardId,
                 "type" => $type,
                 "amount" => $amount
             ) = $data;
@@ -48,14 +50,26 @@ class DepositController extends Controller
             }
 
             try {
-                if ($this->card->create($userId, $cardNumber, $type, $amount)) {
-                    return ResponseFactory::create(201)(message: "Successfully created banking card");
+                $status = $this->card->beginTransaction();
+
+                if (!$status) {
+                    throw new Exception("Can not begin transaction. Returning server error response");
                 }
+
+                if ($this->card->deposit($cardId, $amount)) {
+                    if ($this->transaction->create($userId, $cardId, $type, $amount) && $this->card->commit()) {
+                        return ResponseFactory::create(201)(message: "Successfully deposited money");
+                    }
+
+                    $this->card->rollBack();
+                }
+
+                $this->card->rollBack();
             } catch (\Throwable $e) {
                 // Maybe log it to some file
                 var_dump($e->getMessage());
 
-                return ResponseFactory::create(500)(message: "Failed to register a card");
+                return ResponseFactory::create(500)(message: "Failed to deposit");
             } 
         }
 

@@ -33,7 +33,7 @@ const getCardType = (card) => card.card_type.charAt(0).toUpperCase() + card.card
 const deposit = ref({
     type: "",
     amount: 0, 
-    card_number: ""
+    card_id: null
 });
 
 const openCardCreaionModal = () => {
@@ -59,6 +59,7 @@ const openDepositModal = () => {
 
 const closeDepositModal = () => {
     showDepositModal.value = false;
+    deposit.value = { type: "", amount: 0, card_id: null };
 };
 
 const validateCardInfo = () => {
@@ -108,8 +109,10 @@ const depositMoney = async () => {
         "user_id": user.value.id,
         "type": deposit.value.type,
         "amount": deposit.value.amount,
-        "card_number": deposit.value.card_number
+        "card_id": deposit.value.card_id
     };
+
+    console.log(data);
 
     try {
         await axios.post("/api/bank/deposit", {data});
@@ -189,7 +192,6 @@ const logOutUser = async () => {
         </nav>
 
         <DashboardComponent 
-            v-if="cards && cards.length > 0" 
             :cards="cards"
             :currentView="currentView"
             @view-transactions="currentView = 'transactions'"
@@ -251,6 +253,7 @@ const logOutUser = async () => {
                         <label for="recipient-phone">Recipient Phone Number:</label>
                         <input type="text" id="recipient-phone" class="modal-input" placeholder="e.g., +1234567890"/>
                     </div>
+                    <!-- Add which card to use field -->
                     <div class="form-group">
                         <label for="transfer-amount">Amount:</label>
                         <input type="number" id="transfer-amount" class="modal-input" min="0.01" step="0.01" placeholder="e.g., 50.00"/>
@@ -275,8 +278,8 @@ const logOutUser = async () => {
                     </div>
                     <div class="form-group">
                         <label for="card-deposit">Choose card:</label>
-                        <select v-for="(card, index) in cards" v-model="deposit.card_number" id="card-deposit" class="modal-select">
-                            <option :value="`${card.encrypted_card_number}`" :key="index">{{ getCardType(card) }} ({{ card.card_number }})</option>
+                        <select v-for="(card, index) in cards" v-model.number="deposit.card_id" id="card-deposit" class="modal-select">
+                            <option :value="`${card.id}`" :key="index">{{ getCardType(card) }} ({{ card.card_number }})</option>
                         </select>
                     </div>
                     <div class="form-group">

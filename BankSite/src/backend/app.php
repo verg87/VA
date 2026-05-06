@@ -30,6 +30,7 @@ use App\Controllers\LogOutController;
 use App\Controllers\RefreshTokenController;
 
 use App\Models\Card;
+use App\Models\Transaction;
 
 use App\Models\RefreshSession;
 use App\Models\User;
@@ -51,7 +52,7 @@ $router = new Router();
 $router->get("/api/bank/cards", new CardsController(new Card($db, $vault)));
 $router->post("/api/bank/cards", new CardsController(new Card($db, $vault)));
 
-$router->post("/api/bank/deposit", new DepositController(new Card($db, $vault)));
+$router->post("/api/bank/deposit", new DepositController(new Card($db, $vault), new Transaction($db)));
 
 $router->post("/api/users/", new AccessUserController(new User($db), $vault));
 $router->post("/api/users/sign-up", new SignUpController(new User($db)));

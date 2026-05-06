@@ -82,11 +82,11 @@ class Card extends Model
         }
 
         return [
-            "user_id" => $validatedUserId,
-            "card_number" => $cardNumber,
-            "card_type" => $cardType,
+            "userId" => $validatedUserId,
+            "cardNumber" => $cardNumber,
+            "cardType" => $cardType,
             "amount" => $validatedAmount,
-            "expires_at" => $expiresAtTimestamp,
+            "expiresAt" => $expiresAtTimestamp,
             "cvv" => $validatedCvv,
         ];
     }
@@ -101,7 +101,7 @@ class Card extends Model
 
             $dataKey = openssl_random_pseudo_bytes(openssl_cipher_key_length($algo));
 
-            $encryptedCardNumber = $this->encrypt($validatedData['card_number'], $dataKey, $algo, $taglen);
+            $encryptedCardNumber = $this->encrypt($validatedData['cardNumber'], $dataKey, $algo, $taglen);
             $encryptedCVV = $this->encrypt($validatedData['cvv'], $dataKey, $algo, $taglen);
 
             $masterKey = $this->vault->getKV("masterkey");
@@ -117,12 +117,12 @@ class Card extends Model
             );
 
             return $stmt->execute([
-                ":ui" => $validatedData["user_id"],
+                ":ui" => $validatedData["userId"],
                 ":cn" => $encryptedCardNumber,
                 ":sk" => $encryptedDataKey,
-                ":ct" => $validatedData["card_type"],
+                ":ct" => $validatedData["cardType"],
                 ":am" => $validatedData["amount"],
-                ":ea" => $validatedData["expires_at"],
+                ":ea" => $validatedData["expiresAt"],
                 ":cv" => $encryptedCVV
             ]);
         } catch (Exception $e) {
@@ -132,49 +132,100 @@ class Card extends Model
         }
     }
 
-    private function encrypt(string $data, string $key, string $algo, int $taglen): string
-    {
-        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length($algo));
-        $cipherText = openssl_encrypt($data, $algo, $key, OPENSSL_RAW_DATA, $iv, $tag, "", $taglen);
-        return base64_encode($iv . $tag . $cipherText);
-    }
-
     public function getLatestId(): int
     {
         return (int) $this->db->lastInsertId();
     }
 
-    /**
-     * @throws InvalidArgumentException
-     */
-    private function validateId(int $id): int
+    private function validateTransfer(array $sender, array $receiver, int $amount): bool 
     {
-        $validatedId = filter_var($id, FILTER_VALIDATE_INT);
-
-        if ($validatedId === false) {
-            throw new InvalidArgumentException("Passed ID is not an integer");
+        if ($receiver["card_type"] === "prepaid") {
+            return false;
         }
-        
-        return $validatedId;
+
+        if ($sender["card_type"] === "debit" && $sender["amount"] - $amount >= 0) {
+            return true;
+        } 
+
+        // need to write about credit card balance limit
+        if ($sender["card_type"] === "credit" && $sender["amount"] - $amount >= -10000) {
+            return true;
+        }
+
+        return false;
     }
 
-    private function decrypt(string $data, string $key, string $algo, int $taglen): string
+    private function updateAmount(array $card, int $amount): bool
     {
-        $ivlen = openssl_cipher_iv_length($algo);
+        $stmt = $this->db->prepare(
+            "UPDATE cards SET amount = :am WHERE id = :id"
+        );
 
-        $data = base64_decode($data);
+        $status = $stmt->execute([
+            ":am" => $amount,
+            ":id" => $card["id"]
+        ]);
 
-        $iv = substr($data, 0, $ivlen);
-        $tag = substr($data, $ivlen, $taglen);
-        $cipherKey = substr($data, $ivlen + $taglen);
+        $numOfRowUpdated = $stmt->rowCount();
 
-        $res = openssl_decrypt($cipherKey, $algo, base64_decode($key), OPENSSL_RAW_DATA, $iv, $tag);
+        return $status && $numOfRowUpdated === 1;
+    }
 
-        if (gettype($res) === "boolean") {
-            throw new Exception("Failed to decrypt data");
+    public function transfer(int $senderCardId, int $receiverCardId, int $amount): bool
+    {
+        try {
+            $senderCard = $this->getById($senderCardId);
+            $receiverCard = $this->getById($receiverCardId);
+
+            if (!$this->validateTransfer($senderCard, $receiverCard, $amount)) {
+                return false;
+            }
+
+            $senderNewAmount = $senderCard["amount"] - $amount;
+            $receiverNewAmount = $receiverCard["amount"] + $amount;
+
+            $this->db->beginTransaction();
+
+            $senderAmountUpdate = $this->updateAmount($senderCard, $senderNewAmount);
+            $receiverAmountUpdate = $this->updateAmount($receiverCard, $receiverNewAmount);
+
+            if (!$senderAmountUpdate || !$receiverAmountUpdate) {
+                $this->db->rollBack();
+                return false;
+            }
+
+            $this->db->commit();
+            return true;
+        } catch (Exception $e) {
+            var_dump($e->getMessage());
+            return false;
+        }
+    }
+
+    private function validateDeposit(array $receiver, int $amount): bool
+    {
+        if ($receiver["card_type"] === "prepaid") {
+            return false;
         }
 
-        return $res;
+        return true;
+    }
+
+    public function deposit(int $receiverCardId, int $amount): bool
+    {
+        try {
+            $receiverCard = $this->getById($receiverCardId);
+            var_dump($receiverCard);
+
+            if (!$this->validateDeposit($receiverCard, $amount)) {
+                return false;
+            }
+
+            return $this->updateAmount($receiverCard, $receiverCard["amount"] + $amount);
+        } catch (Exception $e) {
+            var_dump($e->getMessage());
+            return false;
+        }
     }
 
     private function formatCardData(array $cardInfo): array|bool
@@ -185,14 +236,14 @@ class Card extends Model
 
             $masterKey = $this->vault->getKV("masterkey");
 
-            $cardInfo["encrypted_card_number"] = $cardInfo["card_number"];
-
             $decryptedSecretKey = $this->decrypt($cardInfo["secret_key"], $masterKey, $algo, $taglen);
             $decryptedCardNumber = $this->decrypt($cardInfo["card_number"], $decryptedSecretKey, $algo, $taglen);
 
             $cardInfo["card_number"] = "**** **** **** " . Functions::array_last(explode(" ", $decryptedCardNumber));
             $cardInfo["expires_at"] = date("m\/y", $cardInfo["expires_at"]);
+
             unset($cardInfo["cvv"]);
+            unset($cardInfo["secret_key"]);
 
             return $cardInfo;
         } catch (Exception $e) {
@@ -302,5 +353,10 @@ class Card extends Model
     public function rollBack(): bool
     {
         return $this->db->rollBack();
+    }
+
+    public function beginTransaction(): bool
+    {
+        return $this->db->beginTransaction();
     }
 }

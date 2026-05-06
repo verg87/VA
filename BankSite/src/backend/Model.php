@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App;
 
+use Exception;
+use InvalidArgumentException;
+
 require_once __DIR__ . "\\..\\..\\vendor\\autoload.php";
 
 abstract class Model
@@ -14,5 +17,48 @@ abstract class Model
     {
         $this->db = $db;
         $this->db->exec("USE " . $this->db->name);
+    }
+
+    protected function encrypt(string $data, string $key, string $algo, int $taglen): string
+    {
+        $iv = openssl_random_pseudo_bytes(openssl_cipher_iv_length($algo));
+        $cipherText = openssl_encrypt($data, $algo, $key, OPENSSL_RAW_DATA, $iv, $tag, "", $taglen);
+        return base64_encode($iv . $tag . $cipherText);
+    }
+
+    /**
+     * @throws Exception When method failes to decrypt data
+     */
+    protected function decrypt(string $data, string $key, string $algo, int $taglen): string
+    {
+        $ivlen = openssl_cipher_iv_length($algo);
+
+        $data = base64_decode($data);
+
+        $iv = substr($data, 0, $ivlen);
+        $tag = substr($data, $ivlen, $taglen);
+        $cipherKey = substr($data, $ivlen + $taglen);
+
+        $res = openssl_decrypt($cipherKey, $algo, base64_decode($key), OPENSSL_RAW_DATA, $iv, $tag);
+
+        if (gettype($res) === "boolean") {
+            throw new Exception("Failed to decrypt data");
+        }
+
+        return $res;
+    }
+
+    /**
+     * @throws InvalidArgumentException When method failes to validate passed ID
+     */
+    protected function validateId(int $id): int
+    {
+        $validatedId = filter_var($id, FILTER_VALIDATE_INT);
+
+        if ($validatedId === false) {
+            throw new InvalidArgumentException("Passed ID is not an integer");
+        }
+        
+        return $validatedId;
     }
 }

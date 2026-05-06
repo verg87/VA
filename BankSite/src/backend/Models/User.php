@@ -54,16 +54,16 @@ class User extends Model
             $pwdHash = password_hash($validatedData["password"], PASSWORD_DEFAULT);
 
             $stmt = $this->db->prepare(
-                "INSERT INTO users (first_name, last_name, email, phone_number, password) VALUES (:first_name, :last_name, :email, :phone_number, :password)"
+                "INSERT INTO users (first_name, last_name, email, phone_number, password) VALUES (:fn, :ln, :em, :pn, :pw)"
             );
 
-            $stmt->bindParam(":first_name", $validatedData["firstName"]);
-            $stmt->bindParam(":last_name", $validatedData["lastName"]);
-            $stmt->bindParam(":email", $validatedData["email"]);
-            $stmt->bindParam(":phone_number", $validatedData["phoneNumber"]);
-            $stmt->bindParam(":password", $pwdHash);
-
-            return $stmt->execute();
+            return $stmt->execute([
+                ":fn" => $validatedData["firstName"],
+                ":ln" => $validatedData["lastName"],
+                ":em" => $validatedData["email"],
+                ":pn" => $validatedData["phoneNumber"],
+                ":pw" => $pwdHash,
+            ]);
         } catch (Exception $e) {
             var_dump($e->getMessage());
             return false;
@@ -81,17 +81,6 @@ class User extends Model
     public function getLatestUserId(): int
     {
         return (int) $this->db->lastInsertId();
-    }
-
-    private function validateId(int $id): int
-    {
-        $validatedId = filter_var($id, FILTER_VALIDATE_INT);
-
-        if ($validatedId === false) {
-            throw new InvalidArgumentException("Passed ID is not an integer");
-        }
-        
-        return $validatedId;
     }
 
     public function getById(int $userId): array|bool

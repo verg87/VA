@@ -1,5 +1,4 @@
 <script setup>
-import { defineProps, defineEmits } from 'vue';
 
 const props = defineProps({
   cards: Array,
@@ -12,7 +11,6 @@ const emit = defineEmits(['view-transactions', 'view-dashboard', 'open-transfer-
 
 <template>
   <div class="dashboard-layout">
-    <!-- Sidebar -->
     <aside class="dashboard-sidebar">
       <div class="sidebar-header">
         <h2 class="sidebar-logo">Bank Inc.</h2>
@@ -37,7 +35,6 @@ const emit = defineEmits(['view-transactions', 'view-dashboard', 'open-transfer-
       </nav>
     </aside>
 
-    <!-- Main Content -->
     <main class="dashboard-main">
       <header class="dashboard-header">
         <h1 class="header-title">{{ props.currentView === 'dashboard' ? 'Dashboard' : props.currentView === 'transactions' ? 'Transactions' : '' }}</h1>
