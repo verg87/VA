@@ -20,6 +20,8 @@ const showTransferModal = ref(false);
 const showDepositModal = ref(false);
 const currentView = ref('dashboard');
 
+const transferMatchedPhoneNumbers = ref([]);
+
 const newCard = ref({
     type: "credit",
     amount: 0,
@@ -34,6 +36,12 @@ const deposit = ref({
     type: "",
     amount: 0, 
     card_id: null
+});
+
+const transfer = ref({
+    phone_number: "",
+    amount: 0,
+    card_id: null 
 });
 
 const openCardCreaionModal = () => {
@@ -51,6 +59,7 @@ const openTransferModal = () => {
 
 const closeTransferModal = () => {
     showTransferModal.value = false;
+    transfer.value = { phone_number: "", amount: 0, card_id: null };
 };
 
 const openDepositModal = () => {
@@ -61,6 +70,10 @@ const closeDepositModal = () => {
     showDepositModal.value = false;
     deposit.value = { type: "", amount: 0, card_id: null };
 };
+
+const findPhoneNumber = (event) => {
+    console.log(event);
+}
 
 const validateCardInfo = () => {
     if (
@@ -125,6 +138,27 @@ const depositMoney = async () => {
     }
 
     closeDepositModal();
+}
+
+const transferMoney = async () => {
+    const data = {
+        "user_id": user.value.id,
+        "receiver_phone_number": transfer.value.phone_number,
+        "amount": transfer.value.amount,
+        "card_id": transfer.value.card_id
+    };
+
+    try {
+        await axios.post("/api/bank/transfer", {data});
+    } catch (err) {
+        if (axios.isAxiosError(err) && err?.response?.data?.message) {
+            alert(err.response.data.message);
+        } else {
+            alert("Something went wrong...");
+        }
+    }
+
+    closeTransferModal();
 }
 
 
@@ -194,8 +228,11 @@ const logOutUser = async () => {
         <DashboardComponent 
             :cards="cards"
             :currentView="currentView"
+            :transfer-matched-phone-numbers="transferMatchedPhoneNumbers"
             @view-transactions="currentView = 'transactions'"
             @view-dashboard="currentView = 'dashboard'"
+            @view-transfer="currentView = 'transfer'"
+            @find-phone-number="findPhoneNumber"
             @open-transfer-modal="openTransferModal"
             @open-deposit-modal="openDepositModal"
             @open-card-creation-modal="openCardCreaionModal"
@@ -251,16 +288,21 @@ const logOutUser = async () => {
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="recipient-phone">Recipient Phone Number:</label>
-                        <input type="text" id="recipient-phone" class="modal-input" placeholder="e.g., +1234567890"/>
+                        <input v-model="transfer.phone_number" type="text" id="recipient-phone" class="modal-input" placeholder="e.g., +1234567890"/>
                     </div>
-                    <!-- Add which card to use field -->
+                    <div class="form-group">
+                        <label for="card-transfer">Choose card:</label>
+                        <select v-for="(card, index) in cards" v-model.number="transfer.card_id" id="card-transfer" class="modal-select">
+                            <option :value="`${card.id}`" :key="index">{{ getCardType(card) }} ({{ card.card_number }})</option>
+                        </select>
+                    </div>
                     <div class="form-group">
                         <label for="transfer-amount">Amount:</label>
-                        <input type="number" id="transfer-amount" class="modal-input" min="0.01" step="0.01" placeholder="e.g., 50.00"/>
+                        <input v-model.number="transfer.amount" type="number" id="transfer-amount" class="modal-input" min="0.01" step="0.01" placeholder="e.g., 50.00"/>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button @click="closeTransferModal" class="btn btn-primary">Proceed Transfer</button>
+                    <button @click="transferMoney" class="btn btn-primary">Proceed Transfer</button>
                 </div>
             </div>
         </div>

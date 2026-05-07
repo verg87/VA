@@ -3,9 +3,20 @@
 const props = defineProps({
   cards: Array,
   currentView: String,
+  transferMatchedPhoneNumbers: Array
 });
 
-const emit = defineEmits(['view-transactions', 'view-dashboard', 'open-transfer-modal', 'open-deposit-modal', 'open-card-creation-modal']);
+const emit = defineEmits(
+  [
+    'view-transactions', 
+    'view-dashboard', 
+    'view-transfer', 
+    'find-phone-number', 
+    'open-transfer-modal', 
+    'open-deposit-modal', 
+    'open-card-creation-modal'
+  ]
+);
 
 </script>
 
@@ -24,7 +35,7 @@ const emit = defineEmits(['view-transactions', 'view-dashboard', 'open-transfer-
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></svg>
           <span>Transactions</span>
         </a>
-        <a href="#" class="sidebar-link" @click.prevent="emit('open-transfer-modal')">
+        <a href="#" class="sidebar-link" :class="{ 'bg-gray-100 text-blue-600': props.currentView === 'transfer' }" @click.prevent="emit('view-transfer')">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5" /></svg>
           <span>Transfer</span>
         </a>
@@ -37,7 +48,7 @@ const emit = defineEmits(['view-transactions', 'view-dashboard', 'open-transfer-
 
     <main class="dashboard-main">
       <header class="dashboard-header">
-        <h1 class="header-title">{{ props.currentView === 'dashboard' ? 'Dashboard' : props.currentView === 'transactions' ? 'Transactions' : '' }}</h1>
+        <h1 class="header-title">{{ props.currentView.charAt(0).toUpperCase() + props.currentView.slice(1) }}</h1>
         <div class="header-actions" v-if="props.currentView === 'dashboard'">
           <button class="btn btn-secondary" @click="emit('view-transactions')">All Transactions</button>
           <button class="btn btn-primary" @click="emit('open-transfer-modal')">Transfer Money</button>
@@ -77,9 +88,18 @@ const emit = defineEmits(['view-transactions', 'view-dashboard', 'open-transfer-
       </div>
 
       <div v-else-if="props.currentView === 'transactions'" class="dashboard-transactions">
-        <h2 class="header-title">Transactions</h2>
         <p>This is where your transaction history will be displayed.</p>
         <!-- Transaction list or filter components will go here -->
+      </div>
+
+      <div v-else-if="props.currentView === 'transfer'" class="dashboard-transfer">
+        <div class="flex flex-col gap-10">
+          <input @input="emit('find-phone-number', $event)" class="transfer-recipient-phone-input" type="text" id="recipient-phone" placeholder="e.g., +1234567890">
+          <p v-if="props.transferMatchedPhoneNumbers.length <= 0" class="w-fit self-center text-gray-500">There is no matching phone number...</p>
+          <div v-else-if="props.transferMatchedPhoneNumbers > 0">
+            <p>hi</p>
+          </div>
+        </div>
       </div>
     </main>
   </div>
