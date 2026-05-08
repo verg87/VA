@@ -25,7 +25,31 @@ class AccessUserController extends Controller
 
     public function __invoke(ServerRequestInterface $request): ResponseInterface
     {
-        return $this->post($request);
+        switch ($request->getMethod()) {
+            case "GET":
+                return $this->get($request);
+            case "POST":
+                return $this->post($request);
+        }
+
+        return ResponseFactory::create(405)();
+    }
+
+    private function get(ServerRequestInterface $request): ResponseInterface
+    {
+        list("query" => $query) = $this->requestInfo($request);
+
+        if (isset($query["phone_number"]) && $query["phone_number"] !== "") {
+            $user = $this->user->getByPhone($query["phone_number"]);
+
+            if (gettype($user) === "array") {
+                return ResponseFactory::create(200)(data: $user);
+            }
+
+            return ResponseFactory::create(404)();
+        }
+
+        return ResponseFactory::create(400)();
     }
 
     private function post(ServerRequestInterface $request): ResponseInterface

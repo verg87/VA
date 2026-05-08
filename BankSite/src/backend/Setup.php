@@ -67,6 +67,7 @@ try {
         id INT auto_increment PRIMARY KEY,
         user_id INT NOT NULL,
         card_id INT,
+        receiver_user_id INT NOT NULL,
         receiver_card_id INT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         type ENUM('transfer', 'cash', 'check') NOT NULL,

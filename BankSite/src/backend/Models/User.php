@@ -72,7 +72,7 @@ class User extends Model
 
     public function getAll(): array
     {
-        $stmt = $this->db->prepare("SELECT * FROM users");
+        $stmt = $this->db->prepare("SELECT id, first_name, last_name, email, phone_number FROM users");
         $stmt->execute();
 
         return $stmt->fetchAll();
@@ -95,7 +95,31 @@ class User extends Model
             $stmt->bindParam(":ui", $userId);
             $stmt->execute();
 
-            return $stmt->fetch();
+            $user = $stmt->fetch();
+            unset($user["password"]);
+
+            return $user;
+        } catch (Exception $e) {
+            var_dump($e->getMessage());
+            return false;
+        }
+    }
+
+    public function getByIds(array $ids): array|bool
+    {
+        try {
+            foreach ($ids as $id) {
+                $this->validateId($id);
+            }
+
+            $placeholders = implode(', ', array_fill(0, count($ids), '?'));
+            $stmt = $this->db->prepare("SELECT id, first_name, last_name FROM users WHERE id IN ($placeholders)");
+
+            foreach ($ids as $index => $id) {
+                $stmt->bindValue($index + 1, $id);
+            }
+
+            return $stmt->fetchAll();
         } catch (Exception $e) {
             var_dump($e->getMessage());
             return false;
@@ -115,22 +139,46 @@ class User extends Model
         return $validatedPhoneNumber;
     }
 
+    public function getByPhone(string $phoneNumber): array|bool
+    {
+        try {
+            $phoneNumber = $this->validatePhone($phoneNumber);
+
+            $stmt = $this->db->prepare(
+                "SELECT id, first_name, last_name, phone_number FROM users WHERE phone_number = :pn"
+            );
+
+            $stmt->bindParam(":pn", $phoneNumber);
+
+            $stmt->execute();
+            $user = $stmt->fetch();
+            unset($user["password"]);
+
+            return $user;
+        } catch (Exception $e) {
+            // var_dump($e->getMessage());
+            return false;
+        }
+    }
+
     public function getByPhoneAndPWD(string $phoneNumber, string $password): array|bool
     {
         try {
             $phoneNumber = $this->validatePhone($phoneNumber);
 
             $stmt = $this->db->prepare(
-                "SELECT * FROM users WHERE phone_number = :phone_number"
+                "SELECT * FROM users WHERE phone_number = :pn"
             );
 
-            $stmt->bindParam(":phone_number", $phoneNumber);
+            $stmt->bindParam(":pn", $phoneNumber);
 
             $stmt->execute();
             $user = $stmt->fetch();
 
             $hash = $user["password"];
             $valid = password_verify($password, $hash);
+            
+            unset($user["password"]);
 
             return $valid ? $user : [];
         } catch (Exception $e) {
@@ -145,10 +193,10 @@ class User extends Model
             $phoneNumber = $this->validatePhone($phoneNumber);
 
             $stmt = $this->db->prepare(
-                "SELECT * FROM users WHERE phone_number = :phone_number"
+                "SELECT * FROM users WHERE phone_number = :pn"
             );
 
-            $stmt->bindParam(":phone_number", $phoneNumber);
+            $stmt->bindParam(":pn", $phoneNumber);
 
             $stmt->execute();
             $user = $stmt->fetch();

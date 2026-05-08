@@ -43,6 +43,8 @@ class CardsController extends Controller
             if (gettype($cardInfo) === "array") {
                 return ResponseFactory::create(200)(data: $cardInfo);
             }
+
+            return ResponseFactory::create(404)();
         }
 
         return ResponseFactory::create(400)();

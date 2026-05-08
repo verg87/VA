@@ -3,7 +3,7 @@
 const props = defineProps({
   cards: Array,
   currentView: String,
-  transferMatchedPhoneNumbers: Array
+  transferMatchedPhoneNumbers: Array,
 });
 
 const emit = defineEmits(
@@ -94,10 +94,15 @@ const emit = defineEmits(
 
       <div v-else-if="props.currentView === 'transfer'" class="dashboard-transfer">
         <div class="flex flex-col gap-10">
-          <input @input="emit('find-phone-number', $event)" class="transfer-recipient-phone-input" type="text" id="recipient-phone" placeholder="e.g., +1234567890">
+          <input @input="emit('find-phone-number', $event)" class="transfer-recipient-phone-input" type="number" id="recipient-phone" placeholder="e.g., +1234567890">
           <p v-if="props.transferMatchedPhoneNumbers.length <= 0" class="w-fit self-center text-gray-500">There is no matching phone number...</p>
-          <div v-else-if="props.transferMatchedPhoneNumbers > 0">
-            <p>hi</p>
+          <div v-else-if="props.transferMatchedPhoneNumbers.length > 0">
+            <div v-for="(user, index) in props.transferMatchedPhoneNumbers" :key="index">
+              <div class="flex flex-col rounded-2xl bg-white w-full shadow-md p-2 px-3 h-fit gap-2 hover:shadow-lg">
+                <p>{{ user.phone_number }}</p>
+                <p>{{ user.first_name }} {{ user.last_name }}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

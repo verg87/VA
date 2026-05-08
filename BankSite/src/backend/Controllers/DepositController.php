@@ -57,7 +57,7 @@ class DepositController extends Controller
                 }
 
                 if ($this->card->deposit($cardId, $amount)) {
-                    if ($this->transaction->create($userId, $cardId, $type, $amount) && $this->card->commit()) {
+                    if ($this->transaction->create($userId, $userId, $cardId, $type, $amount) && $this->card->commit()) {
                         return ResponseFactory::create(201)(message: "Successfully deposited money");
                     }
 

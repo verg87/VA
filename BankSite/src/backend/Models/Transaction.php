@@ -25,9 +25,10 @@ class Transaction extends Model
     /**
      * @throws InvalidArgumentException|Exception
      */
-    private function validateTransactionCreationArgs(int $userId, int $cardId, string $depositType, int $amount): array
+    private function validateTransactionCreationArgs(int $userId, int $receiverUserId, int $cardId, string $depositType, int $amount): array
     {
         $validatedUserId = $this->validateId($userId);
+        $validatedReceiverUserId = $this->validateId($receiverUserId);
         $validatedCardId = $this->validateId($cardId);
 
         if (!in_array($depositType, ["transfer", "check", "cash"])) {
@@ -43,29 +44,48 @@ class Transaction extends Model
 
         return [
             "userId" => $validatedUserId,
+            "receiverUserId" => $validatedReceiverUserId,
             "cardId" => $validatedCardId,
             "depositType" => $depositType,
             "amount" => $validatedAmount
         ];
     }
 
-    public function create(int $userId, int $cardId, string $depositType, int $amount): bool
+    public function create(int $userId, int $receiverUserId, int $cardId, string $depositType, int $amount): bool
     {
         try {
-            $validatedData = $this->validateTransactionCreationArgs($userId, $cardId, $depositType, $amount);
+            $validatedData = $this->validateTransactionCreationArgs($userId, $receiverUserId, $cardId, $depositType, $amount);
 
             $stmt = $this->db->prepare(
-                "INSERT INTO transactions (user_id, receiver_card_id, type, amount) VALUES (:ui, :rci, :ty, :am)"
+                "INSERT INTO transactions (user_id, receiver_user_id, receiver_card_id, type, amount) VALUES (:ui, :rui, :rci, :ty, :am)"
             );
 
             return $stmt->execute([
                 ":ui" => $validatedData["userId"],
+                ":rui" => $validatedData["receiverUserId"],
                 ":rci" => $validatedData["cardId"],
                 ":ty" => $validatedData["depositType"],
                 ":am" => $validatedData["amount"],
             ]);
         } catch (Exception $e) {
             // maybe log it
+            var_dump($e->getMessage());
+            return false;
+        }
+    }
+
+    public function getAllByUserId(int $userId): array|bool
+    {
+        try {
+            $userId = $this->validateId($userId);
+
+            $stmt = $this->db->prepare(
+                "SELECT * FROM transactions WHERE user_id = :ui OR receiver_user_id = :ui"
+            );
+
+            $stmt->bindParam(":ui", $userId);
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
             var_dump($e->getMessage());
             return false;
         }

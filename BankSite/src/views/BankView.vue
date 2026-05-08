@@ -20,7 +20,10 @@ const showTransferModal = ref(false);
 const showDepositModal = ref(false);
 const currentView = ref('dashboard');
 
+const inputTimeout = ref(null);
 const transferMatchedPhoneNumbers = ref([]);
+
+const transactionsHistory = ref([]);
 
 const newCard = ref({
     type: "credit",
@@ -72,7 +75,27 @@ const closeDepositModal = () => {
 };
 
 const findPhoneNumber = (event) => {
-    console.log(event);
+    clearTimeout(inputTimeout.value);
+    const phoneNumber = event.currentTarget.value;
+
+    if (!/^\d+$/.test(phoneNumber)) {
+        return;
+    }
+
+    inputTimeout.value = setTimeout(async () => {
+        try {
+            const user = (await axios.get("/api/users/", { params: { phone_number: phoneNumber } }))
+                .data.data;
+
+            transferMatchedPhoneNumbers.value.push(user);
+            console.log(transferMatchedPhoneNumbers.value);
+        } catch (err) {
+            if (axios.isAxiosError(err) && err?.response?.data?.message) {
+            } else {
+                alert("Something went wrong...");
+            }
+        } 
+    }, 300);
 }
 
 const validateCardInfo = () => {
@@ -188,7 +211,9 @@ const transferMoney = async () => {
         const data = {"user_id": user.value.id};
         cards.value = (await axios.get("/api/bank/cards", {params: data})).data.data;
 
-        console.log(cards.value);
+        transactionsHistory.value = (await axios.get("/api/bank/transactions", {params: data})).data.data;
+
+        console.log(transactionsHistory.value);
     } catch (err) {
     }
 })();

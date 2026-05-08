@@ -214,5 +214,7 @@
 }
 
 .transfer-recipient-phone-input {
-    @apply w-full p-3 px-5 bg-linear-to-t from-sky-300 to-indigo-300 placeholder-sky-700 text-sky-800 focus:outline-0 rounded-3xl border border-gray-200 shadow-md;
+    @apply 
+        w-full p-3 px-5 bg-white focus:outline-0 rounded-3xl border border-gray-200 shadow-md
+        [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none;
 }
