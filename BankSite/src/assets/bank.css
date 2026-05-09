@@ -209,6 +209,10 @@
 .dashboard-section {
     @apply flex gap-6 w-full;
 }
+
+.dashboard-transactions {
+    @apply flex flex-col gap-6;
+}
 .card-title {
     @apply text-xl font-bold text-gray-800 mb-4;
 }

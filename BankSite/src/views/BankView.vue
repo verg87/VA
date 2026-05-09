@@ -353,7 +353,7 @@ const logOutUser = async () => {
                     <div class="form-group">
                         <label for="deposit-method">Method:</label>
                         <select v-model="deposit.type" id="deposit-method" class="modal-select">
-                            <option value="bank">Bank Transfer</option>
+                            <option value="transfer">Bank Transfer</option>
                             <option value="check">Check</option>
                             <option value="cash">Cash (at ATM)</option>
                         </select>

@@ -19,6 +19,8 @@ const emit = defineEmits(
   ]
 );
 
+const isNegative = (transaction) => transaction.amount.startsWith("-");
+
 </script>
 
 <template>
@@ -95,9 +97,9 @@ const emit = defineEmits(
               <p class="text-xl font-semibold">{{ transaction.name }}</p>
               <p class="text-gray-600 italic">{{ transaction.type }}</p>
             </div>
-            <div class="flex flex-col gap-2">
-              <p>{{ transaction.amount }}</p>
-              <p>{{ transaction.card_type }}</p>
+            <div class="flex flex-col gap-2 text-right">
+              <p class="text-xl font-semibold" :class="isNegative(transaction) ? 'text-red-600' : 'text-green-600'">{{ transaction.amount }}</p>
+              <p class="text-gray-600 italic">{{ transaction.card_type }}</p>
             </div>
           </div>
         </div>
