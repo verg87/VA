@@ -68,6 +68,7 @@ class DepositController extends Controller
             } catch (\Throwable $e) {
                 // Maybe log it to some file
                 var_dump($e->getMessage());
+                $this->card->rollBack();
 
                 return ResponseFactory::create(500)(message: "Failed to deposit");
             } 

@@ -253,6 +253,7 @@ const logOutUser = async () => {
         <DashboardComponent 
             :cards="cards"
             :currentView="currentView"
+            :transactions="transactionsHistory",
             :transfer-matched-phone-numbers="transferMatchedPhoneNumbers"
             @view-transactions="currentView = 'transactions'"
             @view-dashboard="currentView = 'dashboard'"
@@ -341,7 +342,7 @@ const logOutUser = async () => {
                 <div class="modal-body">
                     <div class="form-group">
                         <label for="deposit-amount">Amount to Deposit:</label>
-                        <input type="number" v-model.number="deposit.amount" id="deposit-amount" class="modal-input" min="0.01" step="0.01" placeholder="e.g., 100.00"/>
+                        <input type="number" v-model.number="deposit.amount" id="deposit-amount" class="modal-input" min="0" step="1" placeholder="e.g., 100.00"/>
                     </div>
                     <div class="form-group">
                         <label for="card-deposit">Choose card:</label>

@@ -108,6 +108,10 @@ class User extends Model
     public function getByIds(array $ids): array|bool
     {
         try {
+            if (empty($ids)) {
+                return false;
+            }
+
             foreach ($ids as $id) {
                 $this->validateId($id);
             }
@@ -119,6 +123,7 @@ class User extends Model
                 $stmt->bindValue($index + 1, $id);
             }
 
+            $stmt->execute();
             return $stmt->fetchAll();
         } catch (Exception $e) {
             var_dump($e->getMessage());

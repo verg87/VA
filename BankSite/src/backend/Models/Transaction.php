@@ -25,7 +25,7 @@ class Transaction extends Model
     /**
      * @throws InvalidArgumentException|Exception
      */
-    private function validateTransactionCreationArgs(int $userId, int $receiverUserId, int $cardId, string $depositType, int $amount): array
+    private function validateTransactionCreationArgs(int $userId, int $receiverUserId, int $cardId, string $depositType, float $amount): array
     {
         $validatedUserId = $this->validateId($userId);
         $validatedReceiverUserId = $this->validateId($receiverUserId);
@@ -35,7 +35,7 @@ class Transaction extends Model
             throw new InvalidArgumentException("Invalid deposit type");
         }
 
-        $validatedAmount = filter_var($amount, FILTER_VALIDATE_INT, [
+        $validatedAmount = filter_var($amount, FILTER_VALIDATE_FLOAT, [
             "options" => ["min_range" => 0, "max_range" => 100000]
         ]);
         if ($validatedAmount === false) {
@@ -51,7 +51,7 @@ class Transaction extends Model
         ];
     }
 
-    public function create(int $userId, int $receiverUserId, int $cardId, string $depositType, int $amount): bool
+    public function create(int $userId, int $receiverUserId, int $cardId, string $depositType, float $amount): bool
     {
         try {
             $validatedData = $this->validateTransactionCreationArgs($userId, $receiverUserId, $cardId, $depositType, $amount);
@@ -80,10 +80,10 @@ class Transaction extends Model
             $userId = $this->validateId($userId);
 
             $stmt = $this->db->prepare(
-                "SELECT * FROM transactions WHERE user_id = :ui OR receiver_user_id = :ui"
+                "SELECT * FROM transactions WHERE user_id = :ui OR receiver_user_id = :rui"
             );
 
-            $stmt->bindParam(":ui", $userId);
+            $stmt->execute([":ui" => $userId, ":rui" => $userId]);
             return $stmt->fetchAll();
         } catch (Exception $e) {
             var_dump($e->getMessage());

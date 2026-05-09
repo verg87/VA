@@ -3,6 +3,7 @@
 const props = defineProps({
   cards: Array,
   currentView: String,
+  transactions: Array,
   transferMatchedPhoneNumbers: Array,
 });
 
@@ -88,8 +89,18 @@ const emit = defineEmits(
       </div>
 
       <div v-else-if="props.currentView === 'transactions'" class="dashboard-transactions">
-        <p>This is where your transaction history will be displayed.</p>
-        <!-- Transaction list or filter components will go here -->
+        <div v-for="(transaction, index) in transactions" :key="index" class="w-full">
+          <div class="flex w-full h-fit bg-white p-4 justify-between rounded-2xl shadow-md">
+            <div class="flex flex-col gap-2">
+              <p class="text-xl font-semibold">{{ transaction.name }}</p>
+              <p class="text-gray-600 italic">{{ transaction.type }}</p>
+            </div>
+            <div class="flex flex-col gap-2">
+              <p>{{ transaction.amount }}</p>
+              <p>{{ transaction.card_type }}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div v-else-if="props.currentView === 'transfer'" class="dashboard-transfer">

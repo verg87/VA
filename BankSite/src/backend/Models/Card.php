@@ -28,7 +28,7 @@ class Card extends Model
     /**
      * @throws InvalidArgumentException|Exception
      */
-    private function validateCardCreationArgs(int $userId, string $cardNumber, string $cardType, int $amount, string $expiresAt, string $cvv): array
+    private function validateCardCreationArgs(int $userId, string $cardNumber, string $cardType, float $amount, string $expiresAt, string $cvv): array
     {
         $validatedUserId = $this->validateId($userId);
 
@@ -40,7 +40,7 @@ class Card extends Model
             throw new InvalidArgumentException("Invalid card type");
         }
 
-        $validatedAmount = filter_var($amount, FILTER_VALIDATE_INT, [
+        $validatedAmount = filter_var($amount, FILTER_VALIDATE_FLOAT, [
             "options" => ["min_range" => 0, "max_range" => 1000000]
         ]);
         if ($validatedAmount === false) {
@@ -91,7 +91,7 @@ class Card extends Model
         ];
     }
 
-    public function create(int $userId, string $cardNumber, string $cardType, int $amount = 0, string $expiresAt, string $cvv): bool
+    public function create(int $userId, string $cardNumber, string $cardType, float $amount = 0, string $expiresAt, string $cvv): bool
     {
         try {
             $validatedData = $this->validateCardCreationArgs($userId, $cardNumber, $cardType, $amount, $expiresAt, $cvv);
@@ -137,7 +137,7 @@ class Card extends Model
         return (int) $this->db->lastInsertId();
     }
 
-    private function validateTransfer(array $sender, array $receiver, int $amount): bool 
+    private function validateTransfer(array $sender, array $receiver, float $amount): bool 
     {
         if ($receiver["card_type"] === "prepaid") {
             return false;
@@ -155,7 +155,7 @@ class Card extends Model
         return false;
     }
 
-    private function updateAmount(array $card, int $amount): bool
+    private function updateAmount(array $card, float $amount): bool
     {
         $stmt = $this->db->prepare(
             "UPDATE cards SET amount = :am WHERE id = :id"
@@ -202,20 +202,23 @@ class Card extends Model
         }
     }
 
-    private function validateDeposit(array $receiver, int $amount): bool
+    private function validateDeposit(array $receiver, float $amount): bool
     {
         if ($receiver["card_type"] === "prepaid") {
             return false;
         }
 
-        return true;
+        $validatedAmount = filter_var($amount, FILTER_VALIDATE_FLOAT, [
+            "options" => ["min_range" => 0, "max_range" => 1000000]
+        ]);
+
+        return true && $validatedAmount !== false;
     }
 
-    public function deposit(int $receiverCardId, int $amount): bool
+    public function deposit(int $receiverCardId, float $amount): bool
     {
         try {
             $receiverCard = $this->getById($receiverCardId);
-            var_dump($receiverCard);
 
             if (!$this->validateDeposit($receiverCard, $amount)) {
                 return false;
@@ -266,6 +269,32 @@ class Card extends Model
             return $stmt->fetch();
         } catch (Exception $e) {
             // maybe log it
+            var_dump($e->getMessage());
+            return false;
+        }
+    }
+
+    public function getByIds(array $ids): array|bool
+    {
+        try {
+            if (empty($ids)) {
+                return false;
+            }
+
+            foreach ($ids as $id) {
+                $this->validateId($id);
+            }
+
+            $placeholders = implode(', ', array_fill(0, count($ids), '?'));
+            $stmt = $this->db->prepare("SELECT id, user_id, card_type FROM cards WHERE id IN ($placeholders)");
+
+            foreach ($ids as $index => $id) {
+                $stmt->bindValue($index + 1, $id);
+            }
+
+            $stmt->execute();
+            return $stmt->fetchAll();
+        } catch (Exception $e) {
             var_dump($e->getMessage());
             return false;
         }
