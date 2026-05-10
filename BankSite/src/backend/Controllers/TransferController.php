@@ -13,13 +13,19 @@ use Psr\Http\Message\ServerRequestInterface;
 use App\Helpers\Functions;
 use App\Helpers\DepositTypes;
 use App\Controller;
+
+use App\Models\User;
 use App\Models\Card;
+use App\Models\Account;
 use App\Models\Transaction;
+
 use App\Responses\ResponseFactory;
 
-class DepositController extends Controller
+class TransferController extends Controller
 {
-    public function __construct(private Card $card, private Transaction $transaction)
+    public function __construct(
+        private User $user, private Account $account, private Card $card, private Transaction $transaction
+    )
     {
     }
 
@@ -40,14 +46,10 @@ class DepositController extends Controller
         if (Functions::array_all($data, fn($value) => $value !== "")) {
             list(
                 "user_id" => $userId,
-                "card_id" => $cardId,
-                "type" => $type,
+                "card_id" => $userCardId,
+                "receiver_phone_number" => $receiverPhoneNumber,
                 "amount" => $amount
             ) = $data;
-
-            if (!DepositTypes::tryFrom($type) && $amount > 0) {
-                return ResponseFactory::create(400)();
-            }
 
             try {
                 $status = $this->card->beginTransaction();
@@ -56,9 +58,12 @@ class DepositController extends Controller
                     throw new Exception("Can not begin transaction. Returning server error response");
                 }
 
-                if ($this->card->deposit($cardId, $amount)) {
-                    if ($this->card->commit() && $this->transaction->create($userId, $userId, $cardId, $type, $amount)) {
-                        return ResponseFactory::create(201)(message: "Successfully deposited money");
+                $receiverId = $this->user->getByPhone($receiverPhoneNumber)["id"];
+                $receiverCardId = $this->account->getByUserId($receiverId)["card_id"];
+
+                if ($this->card->transfer($userCardId, $receiverCardId, $amount)) {
+                    if ($this->card->commit() && $this->transaction->create($userId, $receiverId, $receiverCardId, DepositTypes::Transfer->value, $amount, $userCardId)) {
+                        return ResponseFactory::create(201)(message: "Successfully transfered money");
                     }
 
                     $this->card->rollBack();
@@ -70,7 +75,7 @@ class DepositController extends Controller
                 var_dump($e->getMessage());
                 $this->card->rollBack();
 
-                return ResponseFactory::create(500)(message: "Failed to deposit");
+                return ResponseFactory::create(500)(message: "Failed to transfer");
             } 
         }
 

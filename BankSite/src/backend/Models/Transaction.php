@@ -25,11 +25,18 @@ class Transaction extends Model
     /**
      * @throws InvalidArgumentException|Exception
      */
-    private function validateTransactionCreationArgs(int $userId, int $receiverUserId, int $cardId, string $depositType, float $amount): array
+    private function validateTransactionCreationArgs(int $userId, int $receiverUserId, int $receiverCardId, string $depositType, float $amount, int|null $cardId): array
     {
         $validatedUserId = $this->validateId($userId);
         $validatedReceiverUserId = $this->validateId($receiverUserId);
-        $validatedCardId = $this->validateId($cardId);
+        $validatedCardId = $this->validateId($receiverCardId);
+        $validatedCardId = null;
+
+        if (gettype($cardId) === "integer") {
+            $validatedCardId = $this->validateId($cardId);
+        } else if (gettype($cardId) !== "NULL") {
+            throw new InvalidArgumentException("Card ID must be either an integer or null");
+        }
 
         if (!in_array($depositType, ["transfer", "check", "cash"])) {
             throw new InvalidArgumentException("Invalid deposit type");
@@ -44,26 +51,28 @@ class Transaction extends Model
 
         return [
             "userId" => $validatedUserId,
-            "receiverUserId" => $validatedReceiverUserId,
             "cardId" => $validatedCardId,
+            "receiverUserId" => $validatedReceiverUserId,
+            "receiverCardId" => $validatedCardId,
             "depositType" => $depositType,
             "amount" => $validatedAmount
         ];
     }
 
-    public function create(int $userId, int $receiverUserId, int $cardId, string $depositType, float $amount): bool
+    public function create(int $userId, int $receiverUserId, int $receiverCardId, string $depositType, float $amount, int|null $cardId = null): bool
     {
         try {
-            $validatedData = $this->validateTransactionCreationArgs($userId, $receiverUserId, $cardId, $depositType, $amount);
+            $validatedData = $this->validateTransactionCreationArgs($userId, $receiverUserId, $receiverCardId, $depositType, $amount, $cardId);
 
             $stmt = $this->db->prepare(
-                "INSERT INTO transactions (user_id, receiver_user_id, receiver_card_id, type, amount) VALUES (:ui, :rui, :rci, :ty, :am)"
+                "INSERT INTO transactions (user_id, card_id, receiver_user_id, receiver_card_id, type, amount) VALUES (:ui, :ci, :rui, :rci, :ty, :am)"
             );
 
             return $stmt->execute([
                 ":ui" => $validatedData["userId"],
+                ":ci" => $validatedData["cardId"],
                 ":rui" => $validatedData["receiverUserId"],
-                ":rci" => $validatedData["cardId"],
+                ":rci" => $validatedData["receiverCardId"],
                 ":ty" => $validatedData["depositType"],
                 ":am" => $validatedData["amount"],
             ]);

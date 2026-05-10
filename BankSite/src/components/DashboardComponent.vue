@@ -26,8 +26,8 @@ const transferWindowVisibility = ref(false);
 const selectedUser = ref(null);
 
 const transfer = ref({
-    amount: 0,
-    card_id: null 
+  amount: 0,
+  card_id: null 
 });
 
 const isNegative = (transaction) => transaction.amount.startsWith("-");
@@ -206,7 +206,7 @@ const getCardType = (card) => card.card_type.charAt(0).toUpperCase() + card.card
           </div>
           <div class="form-group">
             <label for="transfer-amount">Amount:</label>
-            <input v-model.number="transfer.amount" type="number" id="transfer-amount" class="modal-input" min="0.01" step="0.01" placeholder="e.g., 50.00"/>
+            <input v-model.number="transfer.amount" type="number" id="transfer-amount" class="modal-input" min="1" step="1" placeholder="e.g., 50.00"/>
           </div>
           <div class="transfer-form-actions">
             <button @click="closeTransferWindow" class="btn btn-secondary">Close</button>

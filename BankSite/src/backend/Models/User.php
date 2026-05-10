@@ -156,10 +156,7 @@ class User extends Model
             $stmt->bindParam(":pn", $phoneNumber);
 
             $stmt->execute();
-            $user = $stmt->fetch();
-            unset($user["password"]);
-
-            return $user;
+            return $stmt->fetch();
         } catch (Exception $e) {
             // var_dump($e->getMessage());
             return false;

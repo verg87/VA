@@ -184,17 +184,13 @@ class Card extends Model
             $senderNewAmount = $senderCard["amount"] - $amount;
             $receiverNewAmount = $receiverCard["amount"] + $amount;
 
-            $this->db->beginTransaction();
-
             $senderAmountUpdate = $this->updateAmount($senderCard, $senderNewAmount);
             $receiverAmountUpdate = $this->updateAmount($receiverCard, $receiverNewAmount);
 
             if (!$senderAmountUpdate || !$receiverAmountUpdate) {
-                $this->db->rollBack();
                 return false;
             }
 
-            $this->db->commit();
             return true;
         } catch (Exception $e) {
             var_dump($e->getMessage());
@@ -327,6 +323,11 @@ class Card extends Model
             var_dump($e->getMessage());
             return false;
         }
+    }
+
+    public function getLatestCardId(): int
+    {
+        return (int) $this->db->lastInsertId();
     }
 
     public function getSecretKeys(): array

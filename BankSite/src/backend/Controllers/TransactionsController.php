@@ -71,6 +71,10 @@ class TransactionsController extends Controller
         $sentOrReceived = $this->user->getByIds($userIds);
         $sentOrReceivedCards = $this->card->getByIds(array_values(array_unique($cardIds)));
 
+        if (gettype($sentOrReceivedCards) === "boolean") {
+            throw new Exception("No transactions to parse");
+        }
+
         $cardsById = array_reduce($sentOrReceivedCards, function ($carry, $card) {
             $carry[$card["id"]] = $card;
             return $carry;

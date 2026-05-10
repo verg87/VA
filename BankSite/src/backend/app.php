@@ -21,6 +21,7 @@ use Spiral\RoadRunner\Http\PSR7Worker;
 
 use App\Controllers\CardsController;
 use App\Controllers\DepositController;
+use App\Controllers\TransferController;
 use App\Controllers\TransactionsController;
 
 use App\Controllers\AccessUserController;
@@ -31,6 +32,7 @@ use App\Controllers\LogOutController;
 use App\Controllers\RefreshTokenController;
 
 use App\Models\Card;
+use App\Models\Account;
 use App\Models\Transaction;
 
 use App\Models\RefreshSession;
@@ -50,10 +52,16 @@ $psr7 = new PSR7Worker($worker, $factory, $factory, $factory);
 
 $router = new Router();
 
-$router->get("/api/bank/cards", new CardsController(new Card($db, $vault)));
-$router->post("/api/bank/cards", new CardsController(new Card($db, $vault)));
+$router->get("/api/bank/cards", new CardsController(new Card($db, $vault), new Account($db)));
+$router->post("/api/bank/cards", new CardsController(new Card($db, $vault), new Account($db)));
 
 $router->post("/api/bank/deposit", new DepositController(new Card($db, $vault), new Transaction($db)));
+$router->post("/api/bank/transfer", new TransferController(
+    new User($db),
+    new Account($db),
+    new Card($db, $vault),
+    new Transaction($db)
+));
 
 $router->get("/api/bank/transactions", new TransactionsController(new Transaction($db), new User($db), new Card($db, $vault)));
 
@@ -80,6 +88,6 @@ while (true) {
         $psr7->respond($router->dispatch($request));
     } catch (\Throwable $e) {
         $psr7->respond(new Response(500, [], 'Something Went Wrong!'));
-        $psr7->getWorker()->error((string)$e);
+        $psr7->getWorker()->error((string) $e);
     }
 }

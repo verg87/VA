@@ -12,12 +12,15 @@ use Psr\Http\Message\ServerRequestInterface;
 use App\Helpers\Functions;
 use App\Helpers\CardTypes;
 use App\Controller;
+
 use App\Models\Card;
+use App\Models\Account;
+
 use App\Responses\ResponseFactory;
 
 class CardsController extends Controller
 {
-    public function __construct(private Card $card)
+    public function __construct(private Card $card, private Account $account)
     {
     }
 
@@ -72,9 +75,28 @@ class CardsController extends Controller
             }
 
             try {
+                $this->card->beginTransaction();
+
                 if ($this->card->create($userId, $cardNumber, $cardType, $amount, $expiresAt, $cvv)) {
+                    $cardId = $this->card->getLatestCardId();
+
+                    if ($cardType === CardTypes::Credit->value || $cardType === CardTypes::Debit->value) {
+                        $cardExist = $this->account->getByUserId($userId);
+                        $cardExist = gettype($cardExist) === "array" ? true : false;
+
+                        if ($this->card->commit() && !$cardExist && $this->account->create($userId, $cardId)) {
+                            return ResponseFactory::create(201)(message: "Successfully created banking card");
+                        }
+
+                        $this->card->rollBack();
+                        return ResponseFactory::create(500)(message: "Failed to register a card");
+                    }
+
                     return ResponseFactory::create(201)(message: "Successfully created banking card");
                 }
+
+                $this->card->rollBack();
+                return ResponseFactory::create(500)(message: "Failed to register a card");
             } catch (\Throwable $e) {
                 // Maybe log it to some file
                 var_dump($e->getMessage());

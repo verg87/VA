@@ -6,6 +6,7 @@ A banking website with features for depositing, withdrawing, and card-to-card tr
 
 Before you begin, ensure you have the following installed:
 
+*   [MySQL](https://www.mysql.com/downloads/) (v8.0.0+)
 *   [Node.js](https://nodejs.org/) (v18+)
 *   [npm](https://www.npmjs.com/) (v9+)
 *   [PHP](https://www.php.net/)

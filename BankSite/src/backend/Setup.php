@@ -82,10 +82,25 @@ try {
             ON DELETE CASCADE
     )";
 
+    $createAccountsTableSql = "CREATE TABLE accounts (
+        id INT auto_increment PRIMARY KEY,
+        user_id INT UNIQUE NOT NULL,
+        card_id INT UNIQUE NOT NULL,
+
+        CONSTRAINT fk_user_id_accounts
+            FOREIGN KEY (user_id) REFERENCES users(id) 
+            ON DELETE CASCADE,
+
+        CONSTRAINT fk_card_id_accounts
+            FOREIGN KEY (card_id) REFERENCES cards(id) 
+            ON DELETE CASCADE
+    )";
+
     $pdo->exec($createUsersTableSql);
     $pdo->exec($createCardsTableSql);
     $pdo->exec($createRefreshSessionsTableSql);
     $pdo->exec($createTransactionsTableSql);
+    $pdo->exec($createAccountsTableSql);
 } catch (\PDOException $e) {
     var_dump($e->getMessage());
     exit();
