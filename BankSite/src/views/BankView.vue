@@ -79,6 +79,7 @@ const findPhoneNumber = (event) => {
     const phoneNumber = event.currentTarget.value;
 
     if (!/^\d+$/.test(phoneNumber)) {
+        transferMatchedPhoneNumbers.value = [];
         return;
     }
 
@@ -88,9 +89,9 @@ const findPhoneNumber = (event) => {
                 .data.data;
 
             transferMatchedPhoneNumbers.value.push(user);
-            console.log(transferMatchedPhoneNumbers.value);
         } catch (err) {
             if (axios.isAxiosError(err) && err?.response?.data?.message) {
+                transferMatchedPhoneNumbers.value = [];
             } else {
                 alert("Something went wrong...");
             }
@@ -161,6 +162,14 @@ const depositMoney = async () => {
     }
 
     closeDepositModal();
+}
+
+const transferMoneyFromDashboard = (data) => {
+    transfer.value.phone_number = data.phone_number;
+    transfer.value.amount = data.amount;
+    transfer.value.card_id = data.card_id;
+
+    transferMoney();
 }
 
 const transferMoney = async () => {
@@ -262,6 +271,7 @@ const logOutUser = async () => {
             @open-transfer-modal="openTransferModal"
             @open-deposit-modal="openDepositModal"
             @open-card-creation-modal="openCardCreaionModal"
+            @transfer-money="transferMoneyFromDashboard"
         />
 
         <div v-if="showCardCreationModal" class="modal-overlay">

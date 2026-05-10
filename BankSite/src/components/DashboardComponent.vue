@@ -1,4 +1,5 @@
 <script setup>
+import { ref } from 'vue';
 
 const props = defineProps({
   cards: Array,
@@ -15,9 +16,19 @@ const emit = defineEmits(
     'find-phone-number', 
     'open-transfer-modal', 
     'open-deposit-modal', 
-    'open-card-creation-modal'
+    'open-card-creation-modal',
+    'transfer-money'
   ]
 );
+
+const transferHelperWindowVisibility = ref(false);
+const transferWindowVisibility = ref(false);
+const selectedUser = ref(null);
+
+const transfer = ref({
+    amount: 0,
+    card_id: null 
+});
 
 const isNegative = (transaction) => transaction.amount.startsWith("-");
 
@@ -46,6 +57,33 @@ const byDate = (transactions) => {
     return acc;
   }, {});
 }
+
+const viewTransferHelperWindow = () => {
+  transferHelperWindowVisibility.value = !transferHelperWindowVisibility.value;
+}
+
+const startTransfer = (user) => {
+  selectedUser.value = user;
+  transferWindowVisibility.value = true;
+}
+
+const closeTransferWindow = () => {
+  transferWindowVisibility.value = false;
+  selectedUser.value = null;
+  transfer.value = { amount: 0, card_id: null };
+}
+
+const proceedTransfer = () => {
+  const data = {
+    phone_number: selectedUser.value.phone_number,
+    ...transfer.value
+  };
+
+  emit('transfer-money', data);
+  closeTransferWindow();
+}
+
+const getCardType = (card) => card.card_type.charAt(0).toUpperCase() + card.card_type.slice(1);
 
 </script>
 
@@ -81,6 +119,20 @@ const byDate = (transactions) => {
         <div class="header-actions" v-if="props.currentView === 'dashboard'">
           <button class="btn btn-secondary" @click="emit('view-transactions')">All Transactions</button>
           <button class="btn btn-primary" @click="emit('open-transfer-modal')">Transfer Money</button>
+        </div>
+        <div class="relative" v-if="props.currentView === 'transfer'">
+          <button class="border-0 bg-gray-300 text-gray-800 rounded-full p-2 px-4.25 shadow-md hover:shadow-lg" @click="viewTransferHelperWindow">?</button>
+          <div class="flex gap-2 bg-white rounded-2xl w-fit h-fit absolute right-0 top-0 shadow-md px-4 pb-4" v-if="transferHelperWindowVisibility">
+            <div class="flex flex-col text-sm pt-4">
+              <p class="w-44">If you don't know to whom you can transfer money, you can use next phone numbers:</p>
+              <ul class="my-1">
+                <li>9077134118</li>
+                <li>9078552785</li>
+              </ul>
+              <p>These are test accounts and not actual people</p>
+            </div>
+            <button class="h-fit text-2xl pt-2" @click="viewTransferHelperWindow">&times;</button>
+          </div>
         </div>
       </header>
 
@@ -133,16 +185,32 @@ const byDate = (transactions) => {
       </div>
 
       <div v-else-if="props.currentView === 'transfer'" class="dashboard-transfer">
-        <div class="flex flex-col gap-10">
+        <div v-if="!transferWindowVisibility">
           <input @input="emit('find-phone-number', $event)" class="transfer-recipient-phone-input" type="number" id="recipient-phone" placeholder="e.g., +1234567890">
-          <p v-if="props.transferMatchedPhoneNumbers.length <= 0" class="w-fit self-center text-gray-500">There is no matching phone number...</p>
-          <div v-else-if="props.transferMatchedPhoneNumbers.length > 0">
-            <div v-for="(user, index) in props.transferMatchedPhoneNumbers" :key="index">
-              <div class="flex flex-col rounded-2xl bg-white w-full shadow-md p-2 px-3 h-fit gap-2 hover:shadow-lg">
-                <p>{{ user.phone_number }}</p>
-                <p>{{ user.first_name }} {{ user.last_name }}</p>
-              </div>
+          <div v-if="props.transferMatchedPhoneNumbers.length <= 0" class="text-center mt-6">
+            <p class="text-gray-500">There is no matching phone number...</p>
+          </div>
+          <div v-else class="transfer-user-list">
+            <div v-for="(user, index) in props.transferMatchedPhoneNumbers" :key="index" class="transfer-user-item" @click="startTransfer(user)">
+              <p>{{ user.phone_number }}</p>
+              <p>{{ user.first_name }} {{ user.last_name }}</p>
             </div>
+          </div>
+        </div>
+        <div v-else-if="transferWindowVisibility" class="transfer-form">
+          <div class="form-group">
+            <label for="card-transfer">Choose card:</label>
+            <select v-model.number="transfer.card_id" id="card-transfer" class="modal-select">
+              <option v-for="(card, index) in cards" :value="`${card.id}`" :key="index">{{ getCardType(card) }} ({{ card.card_number }})</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="transfer-amount">Amount:</label>
+            <input v-model.number="transfer.amount" type="number" id="transfer-amount" class="modal-input" min="0.01" step="0.01" placeholder="e.g., 50.00"/>
+          </div>
+          <div class="transfer-form-actions">
+            <button @click="closeTransferWindow" class="btn btn-secondary">Close</button>
+            <button @click="proceedTransfer" class="btn btn-primary">Transfer</button>
           </div>
         </div>
       </div>
