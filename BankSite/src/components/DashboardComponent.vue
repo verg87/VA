@@ -3,7 +3,7 @@
 const props = defineProps({
   cards: Array,
   currentView: String,
-  transactions: Array,
+  transactions: Object,
   transferMatchedPhoneNumbers: Array,
 });
 
@@ -20,6 +20,32 @@ const emit = defineEmits(
 );
 
 const isNegative = (transaction) => transaction.amount.startsWith("-");
+
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  let formatted = date.toLocaleString("en", { month: "long" }) + " " + date.getDate();
+
+  if (date.getFullYear() < (new Date()).getFullYear()) {
+    formatted += ` ${date.getFullYear()}`;
+  }
+
+  return formatted;
+};
+
+const byDate = (transactions) => {
+  const sortedEntries = Object.entries(transactions).sort((a, b) => {
+    if ((new Date(a[0])) > (new Date(b[0]))) {
+      return -1;
+    }
+
+    return 1;
+  });
+
+  return sortedEntries.reduce((acc, entry) => {
+    acc[entry[0]] = entry[1];
+    return acc;
+  }, {});
+}
 
 </script>
 
@@ -91,8 +117,9 @@ const isNegative = (transaction) => transaction.amount.startsWith("-");
       </div>
 
       <div v-else-if="props.currentView === 'transactions'" class="dashboard-transactions">
-        <div v-for="(transaction, index) in transactions" :key="index" class="w-full">
-          <div class="flex w-full h-fit bg-white p-4 justify-between rounded-2xl shadow-md">
+        <div v-for="(transactionsForDate, date) in byDate(transactions)" :key="date" class="w-full">
+          <p class="text-2xl font-bold mb-4">{{ formatDate(date) }}</p>
+          <div v-for="(transaction, index) in transactionsForDate" :key="index" class="flex w-full h-fit bg-white p-4 justify-between rounded-2xl shadow-md mb-6">
             <div class="flex flex-col gap-2">
               <p class="text-xl font-semibold">{{ transaction.name }}</p>
               <p class="text-gray-600 italic">{{ transaction.type }}</p>

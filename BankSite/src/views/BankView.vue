@@ -23,7 +23,7 @@ const currentView = ref('dashboard');
 const inputTimeout = ref(null);
 const transferMatchedPhoneNumbers = ref([]);
 
-const transactionsHistory = ref([]);
+const transactionsHistory = ref({});
 
 const newCard = ref({
     type: "credit",

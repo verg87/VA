@@ -80,6 +80,7 @@ class TransactionsController extends Controller
             $name = "";
             $amount = "";
             $cardType = "";
+            $date = explode(" ", $tr["created_at"])[0];
 
             $cardId = $this->getUserCardId($tr, $userId);
 
@@ -104,7 +105,7 @@ class TransactionsController extends Controller
                 $amount = "+" . $tr["amount"];
             }
 
-            $formattedTransactions[] = [
+            $formattedTransactions[$date][] = [
                 "name" => $name,
                 "type" => $tr["type"],
                 "amount" => $amount,
