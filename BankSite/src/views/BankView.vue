@@ -83,6 +83,8 @@ const findPhoneNumber = (event) => {
         return;
     }
 
+    transferMatchedPhoneNumbers.value = transferMatchedPhoneNumbers.value.filter((ph) => ph === phoneNumber);
+
     inputTimeout.value = setTimeout(async () => {
         try {
             const user = (await axios.get("/api/users/", { params: { phone_number: phoneNumber } }))

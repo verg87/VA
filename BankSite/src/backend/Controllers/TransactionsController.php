@@ -41,6 +41,7 @@ class TransactionsController extends Controller
 
                 return ResponseFactory::create(404)();
             } catch (Exception $e) {
+                var_dump($e->getMessage());
                 return ResponseFactory::create(500)(message: "Failed to parse transactions");
             }
         }
@@ -55,9 +56,16 @@ class TransactionsController extends Controller
 
         $formattedTransactions = [];
 
-        $userIds = array_reduce($transactions, function($carry, $tr) use ($userId) {
+        $senderIds = array_reduce($transactions, function($carry, $tr) use ($userId) {
             if ($tr["user_id"] !== $userId) {
                 $carry[] = $tr["user_id"];
+            }
+            return $carry;
+        }, []);
+
+        $receiverIds = array_reduce($transactions, function($carry, $tr) use ($userId) {
+            if ($tr["receiver_user_id"] !== $userId) {
+                $carry[] = $tr["receiver_user_id"];
             }
             return $carry;
         }, []);
@@ -68,14 +76,15 @@ class TransactionsController extends Controller
             $cardIds[] = $this->getUserCardId($tr, $userId);
         }
 
-        $sentOrReceived = $this->user->getByIds($userIds);
-        $sentOrReceivedCards = $this->card->getByIds(array_values(array_unique($cardIds)));
+        $senders = $this->user->getByIds($senderIds);
+        $receivers = $this->user->getByIds($receiverIds);
+        $sendersCards = $this->card->getByIds(array_values(array_unique($cardIds)));
 
-        if (gettype($sentOrReceivedCards) === "boolean") {
+        if (gettype($sendersCards) === "boolean") {
             throw new Exception("No transactions to parse");
         }
 
-        $cardsById = array_reduce($sentOrReceivedCards, function ($carry, $card) {
+        $cardsById = array_reduce($sendersCards, function ($carry, $card) {
             $carry[$card["id"]] = $card;
             return $carry;
         }, []);
@@ -84,7 +93,7 @@ class TransactionsController extends Controller
             $name = "";
             $amount = "";
             $cardType = "";
-            $date = explode(" ", $tr["created_at"])[0];
+            list($date, $time) = explode(" ", $tr["created_at"]);
 
             $cardId = $this->getUserCardId($tr, $userId);
 
@@ -93,27 +102,38 @@ class TransactionsController extends Controller
                 $cardType = $card["card_type"];
             }
 
-            if ($tr["user_id"] === $userId) {
+            if ($tr["user_id"] === $userId && $tr["receiver_user_id"] === $userId) {
                 $name = $user["first_name"] . " " . $user["last_name"];
+            } else if ($tr["user_id"] === $userId && $tr["receiver_user_id"] !== $userId) {
+                $receiver = array_filter($receivers, function($user) use ($tr) {
+                    return $user["id"] === $tr["receiver_user_id"];
+                })[0];
+
+                $name = $receiver["first_name"] . " " . $receiver["last_name"];
             } else {
-                $sent = array_filter($sentOrReceived, function($user) use ($tr) {
+                $sender = array_filter($senders, function($user) use ($tr) {
                     return $user["id"] === $tr["user_id"];
                 })[0];
 
-                $name = $sent["first_name"] . " " . $sent["last_name"];
+                $name = $sender["first_name"] . " " . $sender["last_name"];
             }
 
             if ($tr["user_id"] !== $tr["receiver_user_id"] && $tr["user_id"] === $userId) {
                 $amount = "-" . $tr["amount"];
-            } else if ($tr["user_id"] === $tr["receiver_user_id"]) {
+            } else if ($tr["user_id"] !== $tr["receiver_user_id"] && $tr["user_id"] !== $userId) {
                 $amount = "+" . $tr["amount"];
+            } else if ($tr["user_id"] === $tr["receiver_user_id"] && $tr["card_id"] === null) {
+                $amount = "+" . $tr["amount"];
+            } else if ($tr["user_id"] === $tr["receiver_user_id"] && $tr["card_id"] !== null) {
+                $amount = $tr["amount"];
             }
 
             $formattedTransactions[$date][] = [
                 "name" => $name,
                 "type" => $tr["type"],
                 "amount" => $amount,
-                "card_type" => $cardType
+                "card_type" => $cardType,
+                "time" => $time
             ];
         }
 

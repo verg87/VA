@@ -1,4 +1,5 @@
 <script setup>
+import TransferHelperWindow from './TransferHelperWindow.vue';
 import { ref } from 'vue';
 
 const props = defineProps({
@@ -21,7 +22,7 @@ const emit = defineEmits(
   ]
 );
 
-const transferHelperWindowVisibility = ref(false);
+
 const transferWindowVisibility = ref(false);
 const selectedUser = ref(null);
 
@@ -43,24 +44,28 @@ const formatDate = (dateString) => {
   return formatted;
 };
 
-const byDate = (transactions) => {
-  const sortedEntries = Object.entries(transactions).sort((a, b) => {
-    if ((new Date(a[0])) > (new Date(b[0]))) {
-      return -1;
-    }
-
-    return 1;
+const byDateTime = (transactions) => {
+  if (!transactions) {
+    return {};
+  }
+  
+  const sortedEntries = Object.entries(transactions).sort(([dateA], [dateB]) => {
+    return new Date(dateB) - new Date(dateA);
   });
 
-  return sortedEntries.reduce((acc, entry) => {
-    acc[entry[0]] = entry[1];
+  return sortedEntries.reduce((acc, [date, transactionList]) => {
+    const sortedTransactions = [...transactionList].sort((a, b) => {
+      const dateTimeA = new Date(`${date} ${a.time}`);
+      const dateTimeB = new Date(`${date} ${b.time}`);
+      return dateTimeB - dateTimeA;
+    });
+
+    acc[date] = sortedTransactions;
     return acc;
   }, {});
 }
 
-const viewTransferHelperWindow = () => {
-  transferHelperWindowVisibility.value = !transferHelperWindowVisibility.value;
-}
+
 
 const startTransfer = (user) => {
   selectedUser.value = user;
@@ -84,6 +89,7 @@ const proceedTransfer = () => {
 }
 
 const getCardType = (card) => card.card_type.charAt(0).toUpperCase() + card.card_type.slice(1);
+const getCardBalance = (card) => `${card.amount}`.startsWith("-") ? `-$${card.amount.toString().slice(1)}` : `$${card.amount}`
 
 </script>
 
@@ -121,18 +127,7 @@ const getCardType = (card) => card.card_type.charAt(0).toUpperCase() + card.card
           <button class="btn btn-primary" @click="emit('open-transfer-modal')">Transfer Money</button>
         </div>
         <div class="relative" v-if="props.currentView === 'transfer'">
-          <button class="border-0 bg-gray-300 text-gray-800 rounded-full p-2 px-4.25 shadow-md hover:shadow-lg" @click="viewTransferHelperWindow">?</button>
-          <div class="flex gap-2 bg-white rounded-2xl w-fit h-fit absolute right-0 top-0 shadow-md px-4 pb-4" v-if="transferHelperWindowVisibility">
-            <div class="flex flex-col text-sm pt-4">
-              <p class="w-44">If you don't know to whom you can transfer money, you can use next phone numbers:</p>
-              <ul class="my-1">
-                <li>9077134118</li>
-                <li>9078552785</li>
-              </ul>
-              <p>These are test accounts and not actual people</p>
-            </div>
-            <button class="h-fit text-2xl pt-2" @click="viewTransferHelperWindow">&times;</button>
-          </div>
+          <TransferHelperWindow />
         </div>
       </header>
 
@@ -160,7 +155,7 @@ const getCardType = (card) => card.card_type.charAt(0).toUpperCase() + card.card
               </div>
               <div class="card-number">{{ card.card_number }}</div>
               <div class="card-details">
-                  <div class="card-balance">Balance: ${{ card.amount.toFixed(2) }}</div>
+                  <div class="card-balance">Balance: {{ getCardBalance(card) }}</div>
                   <div class="card-expiry">Expires: {{ card.expires_at }}</div>
               </div>
             </div>
@@ -169,7 +164,7 @@ const getCardType = (card) => card.card_type.charAt(0).toUpperCase() + card.card
       </div>
 
       <div v-else-if="props.currentView === 'transactions'" class="dashboard-transactions">
-        <div v-for="(transactionsForDate, date) in byDate(transactions)" :key="date" class="w-full">
+        <div v-for="(transactionsForDate, date) in byDateTime(transactions)" :key="date" class="w-full">
           <p class="text-2xl font-bold mb-4">{{ formatDate(date) }}</p>
           <div v-for="(transaction, index) in transactionsForDate" :key="index" class="flex w-full h-fit bg-white p-4 justify-between rounded-2xl shadow-md mb-6">
             <div class="flex flex-col gap-2">

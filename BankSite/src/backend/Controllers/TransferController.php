@@ -58,8 +58,21 @@ class TransferController extends Controller
                     throw new Exception("Can not begin transaction. Returning server error response");
                 }
 
-                $receiverId = $this->user->getByPhone($receiverPhoneNumber)["id"];
-                $receiverCardId = $this->account->getByUserId($receiverId)["card_id"];
+                $receiverUser = $this->user->getByPhone($receiverPhoneNumber);
+
+                if (gettype($receiverUser) !== "array") {
+                    return ResponseFactory::create(404)(message: "There is no such user with that phone number");
+                }
+
+                $receiverId = $receiverUser["id"];
+
+                $receiverCard = $this->account->getByUserId($receiverId);
+
+                if (gettype($receiverCard) !== "array") {
+                    return ResponseFactory::create(404)(message: "Failed to find a banking account attached to this phone number");
+                }
+
+                $receiverCardId = $receiverCard["card_id"];
 
                 if ($this->card->transfer($userCardId, $receiverCardId, $amount)) {
                     if ($this->card->commit() && $this->transaction->create($userId, $receiverId, $receiverCardId, DepositTypes::Transfer->value, $amount, $userCardId)) {
