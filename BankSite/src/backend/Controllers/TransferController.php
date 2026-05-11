@@ -52,7 +52,7 @@ class TransferController extends Controller
             ) = $data;
 
             try {
-                $status = $this->card->beginTransaction();
+                $status = $this->card->safeTransaction();
 
                 if (!$status) {
                     throw new Exception("Can not begin transaction. Returning server error response");
@@ -61,6 +61,7 @@ class TransferController extends Controller
                 $receiverUser = $this->user->getByPhone($receiverPhoneNumber);
 
                 if (gettype($receiverUser) !== "array") {
+                    $this->card->rollBack();
                     return ResponseFactory::create(404)(message: "There is no such user with that phone number");
                 }
 
@@ -69,6 +70,7 @@ class TransferController extends Controller
                 $receiverCard = $this->account->getByUserId($receiverId);
 
                 if (gettype($receiverCard) !== "array") {
+                    $this->card->rollBack();
                     return ResponseFactory::create(404)(message: "Failed to find a banking account attached to this phone number");
                 }
 
@@ -92,6 +94,6 @@ class TransferController extends Controller
             } 
         }
 
-        return ResponseFactory::create(400)();
+        return ResponseFactory::create(400)(message: "Invalid transfer data");
     }
 }

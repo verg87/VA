@@ -1,6 +1,6 @@
 <script setup>
 import TransferHelperWindow from './TransferHelperWindow.vue';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
   cards: Array,
@@ -22,7 +22,6 @@ const emit = defineEmits(
   ]
 );
 
-
 const transferWindowVisibility = ref(false);
 const selectedUser = ref(null);
 
@@ -31,7 +30,10 @@ const transfer = ref({
   card_id: null 
 });
 
-const isNegative = (transaction) => transaction.amount.startsWith("-");
+const getAmountColor = (transaction) => transaction.amount.startsWith("-") ? "text-red-600" : (transaction.amount.startsWith("+") ? "text-green-600" : "");
+const hasMainCard = computed(() => {
+  return props.cards !== null && props.cards.filter((card) => card["is_main"]).length > 0;
+});
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
@@ -64,8 +66,6 @@ const byDateTime = (transactions) => {
     return acc;
   }, {});
 }
-
-
 
 const startTransfer = (user) => {
   selectedUser.value = user;
@@ -172,14 +172,14 @@ const getCardBalance = (card) => `${card.amount}`.startsWith("-") ? `-$${card.am
               <p class="text-gray-600 italic">{{ transaction.type }}</p>
             </div>
             <div class="flex flex-col gap-2 text-right">
-              <p class="text-xl font-semibold" :class="isNegative(transaction) ? 'text-red-600' : 'text-green-600'">{{ transaction.amount }}</p>
+              <p class="text-xl font-semibold" :class="getAmountColor(transaction)">{{ transaction.amount }}</p>
               <p class="text-gray-600 italic">{{ transaction.card_type }}</p>
             </div>
           </div>
         </div>
       </div>
 
-      <div v-else-if="props.currentView === 'transfer'" class="dashboard-transfer">
+      <div v-else-if="props.currentView === 'transfer' && hasMainCard" class="dashboard-transfer">
         <div v-if="!transferWindowVisibility">
           <input @input="emit('find-phone-number', $event)" class="transfer-recipient-phone-input" type="number" id="recipient-phone" placeholder="e.g., +1234567890">
           <div v-if="props.transferMatchedPhoneNumbers.length <= 0" class="text-center mt-6">
@@ -193,6 +193,7 @@ const getCardBalance = (card) => `${card.amount}`.startsWith("-") ? `-$${card.am
           </div>
         </div>
         <div v-else-if="transferWindowVisibility" class="transfer-form">
+          <legend class="text-2xl font-bold text-gray-700 mb-4">Transfer Information</legend>
           <div class="form-group">
             <label for="card-transfer">Choose card:</label>
             <select v-model.number="transfer.card_id" id="card-transfer" class="modal-select">
@@ -208,6 +209,9 @@ const getCardBalance = (card) => `${card.amount}`.startsWith("-") ? `-$${card.am
             <button @click="proceedTransfer" class="btn btn-primary">Transfer</button>
           </div>
         </div>
+      </div>
+      <div v-else-if="props.currentView === 'transfer' && !hasMainCard">
+        <p class="text-center text-lg font-semibold">You need to register a card, either credit or debit to transfer money</p>
       </div>
     </main>
   </div>

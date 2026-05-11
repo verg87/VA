@@ -54,7 +54,7 @@ try {
         card_number CHAR(64) UNIQUE NOT NULL,
         secret_key CHAR(96) UNIQUE NOT NULL,
         card_type ENUM('debit', 'credit', 'prepaid', 'overdraft') NOT NULL,
-        amount FLOAT NOT NULL,
+        amount DECIMAL(12, 2) NOT NULL,
         expires_at BIGINT NOT NULL,
         cvv CHAR(44) NOT NULL,
 
@@ -71,7 +71,7 @@ try {
         receiver_card_id INT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         type ENUM('transfer', 'cash', 'check') NOT NULL,
-        amount FLOAT NOT NULL,
+        amount DECIMAL(12, 2) NOT NULL,
 
         CONSTRAINT fk_user_id_transactions
             FOREIGN KEY (user_id) REFERENCES users(id) 

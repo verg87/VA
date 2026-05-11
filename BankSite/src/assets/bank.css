@@ -187,7 +187,7 @@
 }
 
 .btn {
-    @apply px-4 py-2 rounded-lg text-white font-semibold shadow-md transition-transform transform hover:scale-101;
+    @apply px-4 py-2 rounded-lg text-white font-semibold shadow-md;
 }
 
 .btn-primary {

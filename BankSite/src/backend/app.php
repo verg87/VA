@@ -54,6 +54,7 @@ $router = new Router();
 
 $router->get("/api/bank/cards", new CardsController(new Card($db, $vault), new Account($db)));
 $router->post("/api/bank/cards", new CardsController(new Card($db, $vault), new Account($db)));
+$router->get("/api/bank/transactions", new TransactionsController(new Transaction($db), new User($db), new Card($db, $vault)));
 
 $router->post("/api/bank/deposit", new DepositController(new Card($db, $vault), new Transaction($db)));
 $router->post("/api/bank/transfer", new TransferController(
@@ -62,8 +63,6 @@ $router->post("/api/bank/transfer", new TransferController(
     new Card($db, $vault),
     new Transaction($db)
 ));
-
-$router->get("/api/bank/transactions", new TransactionsController(new Transaction($db), new User($db), new Card($db, $vault)));
 
 $router->get("/api/users/", new AccessUserController(new User($db), $vault));
 $router->post("/api/users/", new AccessUserController(new User($db), $vault));

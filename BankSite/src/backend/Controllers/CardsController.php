@@ -42,8 +42,17 @@ class CardsController extends Controller
 
         if (isset($query["user_id"]) && $query["user_id"] !== "") {
             $cardInfo = $this->card->getByUserId((int) $query["user_id"]);
+            $mainAccount = $this->account->getByUserId((int) $query["user_id"]);
 
-            if (gettype($cardInfo) === "array") {
+            if (gettype($cardInfo) === "array" && gettype($mainAccount) === "array") {
+                $cardInfo = array_map(function($card) use ($mainAccount) {
+                    $card["is_main"] = $card["id"] === $mainAccount["card_id"];
+
+                    return $card;
+                }, $cardInfo);
+
+                return ResponseFactory::create(200)(data: $cardInfo);
+            } else if (gettype($cardInfo) === "array" && gettype($mainAccount) !== "array") {
                 return ResponseFactory::create(200)(data: $cardInfo);
             }
 

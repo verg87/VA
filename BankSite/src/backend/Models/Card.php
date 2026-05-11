@@ -14,6 +14,7 @@ use App\Helpers\Functions;
 use DateTimeImmutable;
 use Exception;
 use InvalidArgumentException;
+use PDOException;
 
 class Card extends Model
 {
@@ -139,10 +140,6 @@ class Card extends Model
 
     private function validateTransfer(array $sender, array $receiver, float $amount): bool 
     {
-        if ($receiver["card_type"] === "prepaid") {
-            return false;
-        }
-
         if ($sender["card_type"] === "debit" && $sender["amount"] - $amount >= 0) {
             return true;
         } 
@@ -387,6 +384,17 @@ class Card extends Model
 
     public function beginTransaction(): bool
     {
+        return $this->db->beginTransaction();
+    }
+
+    public function safeTransaction(): bool
+    {
+        try {
+            return $this->db->beginTransaction();
+        } catch (PDOException $e) {
+            $this->db->rollBack();
+        }
+
         return $this->db->beginTransaction();
     }
 }
