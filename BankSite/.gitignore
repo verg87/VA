@@ -18,3 +18,4 @@ coverage
 vendor
 rr.exe
 vault-data
+del.php

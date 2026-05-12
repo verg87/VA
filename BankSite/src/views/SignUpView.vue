@@ -157,7 +157,7 @@ const changeStage = (event) => {
     <div class="relative z-0 w-100 mb-6">
       <input class="input focus:outline-none focus:ring-0 focus:border-brand peer"
         :type="stages[currentActiveSignUpStage].type" :id="stages[currentActiveSignUpStage].id"
-        v-model="stages[currentActiveSignUpStage].value" placeholder=" " required>
+        v-model.trim="stages[currentActiveSignUpStage].value" placeholder=" " required>
       <label
         class="label peer-focus:inset-s-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-5 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
         :for="stages[currentActiveSignUpStage].id">

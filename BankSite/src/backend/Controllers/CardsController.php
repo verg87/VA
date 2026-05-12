@@ -50,9 +50,11 @@ class CardsController extends Controller
 
                     return $card;
                 }, $cardInfo);
+                var_dump($cardInfo);
 
                 return ResponseFactory::create(200)(data: $cardInfo);
             } else if (gettype($cardInfo) === "array" && gettype($mainAccount) !== "array") {
+                var_dump($cardInfo);
                 return ResponseFactory::create(200)(data: $cardInfo);
             }
 

@@ -9,7 +9,7 @@ Before you begin, ensure you have the following installed:
 *   [MySQL](https://www.mysql.com/downloads/) (v8.0.0+)
 *   [Node.js](https://nodejs.org/) (v18+)
 *   [npm](https://www.npmjs.com/) (v9+)
-*   [PHP](https://www.php.net/)
+*   [PHP](https://www.php.net/) (v8.5.0+)
 *   [Composer](https://getcomposer.org/)
 *   [Vault](https://www.vaultproject.io/downloads)
 

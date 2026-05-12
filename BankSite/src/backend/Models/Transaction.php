@@ -6,12 +6,11 @@ namespace App\Models;
 
 require_once __DIR__ . "/../../../vendor/autoload.php";
 
+use Respect\Validation\ValidatorBuilder as v;
+
 use App\DB;
 use App\Model;
-use App\Vault\Vault;
-use App\Helpers\Functions;
 
-use DateTimeImmutable;
 use Exception;
 use InvalidArgumentException;
 
@@ -25,56 +24,34 @@ class Transaction extends Model
     /**
      * @throws InvalidArgumentException|Exception
      */
-    private function validateTransactionCreationArgs(int $userId, int $receiverUserId, int $receiverCardId, string $depositType, float $amount, int|null $cardId): array
+    private function validate(int $userId, int $receiverUserId, int $receiverCardId, string $depositType, float $amount, int|null $cardId): void
     {
-        $validatedUserId = $this->validateId($userId);
-        $validatedReceiverUserId = $this->validateId($receiverUserId);
-        $validatedCardId = $this->validateId($receiverCardId);
-        $validatedCardId = null;
+        v::intType()->positive()->assert($userId);
+        v::intType()->positive()->assert($receiverUserId);
+        v::intType()->positive()->assert($receiverCardId);
 
-        if (gettype($cardId) === "integer") {
-            $validatedCardId = $this->validateId($cardId);
-        } else if (gettype($cardId) !== "NULL") {
-            throw new InvalidArgumentException("Card ID must be either an integer or null");
-        }
+        v::alpha()->containsAny(["transfer", "check", "cash"])->assert($depositType);
+        v::floatType()->between(0, 100000)->assert($amount); // transaction limit
 
-        if (!in_array($depositType, ["transfer", "check", "cash"])) {
-            throw new InvalidArgumentException("Invalid deposit type");
-        }
-
-        $validatedAmount = filter_var($amount, FILTER_VALIDATE_FLOAT, [
-            "options" => ["min_range" => 0, "max_range" => 100000]
-        ]);
-        if ($validatedAmount === false) {
-            throw new InvalidArgumentException("Deposit limit");
-        }
-
-        return [
-            "userId" => $validatedUserId,
-            "cardId" => $validatedCardId,
-            "receiverUserId" => $validatedReceiverUserId,
-            "receiverCardId" => $validatedCardId,
-            "depositType" => $depositType,
-            "amount" => $validatedAmount
-        ];
+        v::nullOr(v::intType()->positive())->assert($cardId);
     }
 
     public function create(int $userId, int $receiverUserId, int $receiverCardId, string $depositType, float $amount, int|null $cardId = null): bool
     {
         try {
-            $validatedData = $this->validateTransactionCreationArgs($userId, $receiverUserId, $receiverCardId, $depositType, $amount, $cardId);
+            $this->validate($userId, $receiverUserId, $receiverCardId, $depositType, $amount, $cardId);
 
             $stmt = $this->db->prepare(
                 "INSERT INTO transactions (user_id, card_id, receiver_user_id, receiver_card_id, type, amount) VALUES (:ui, :ci, :rui, :rci, :ty, :am)"
             );
 
             return $stmt->execute([
-                ":ui" => $validatedData["userId"],
-                ":ci" => $validatedData["cardId"],
-                ":rui" => $validatedData["receiverUserId"],
-                ":rci" => $validatedData["receiverCardId"],
-                ":ty" => $validatedData["depositType"],
-                ":am" => $validatedData["amount"],
+                ":ui" => $userId,
+                ":ci" => $cardId,
+                ":rui" => $receiverUserId,
+                ":rci" => $receiverCardId,
+                ":ty" => $depositType,
+                ":am" => $amount,
             ]);
         } catch (Exception $e) {
             // maybe log it
