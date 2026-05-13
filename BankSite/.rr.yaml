@@ -14,12 +14,21 @@ http:
         supervisor:
             max_worker_memory: 100
     headers:
+        response:
+            Content-Security-Policy: "default-src 'self'; script-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+            X-Content-Type-Options: "nosniff"
+            X-Frame-Options: "DENY"
+            Referrer-Policy: "same-origin"
+            Permissions-Policy: "camera=(), microphone=(), geolocation=()"
+            Cross-Origin-Resource-Policy: "same-origin"
+            Cross-Origin-Embedder-Policy: "require-corp"
+            Cross-Origin-Opener-Policy: "same-origin"
         cors:
-            allowed_origin: 'http://localhost:5173'
-            allowed_headers: 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With'
-            allowed_methods: 'GET,POST'
+            allowed_origin: "http://localhost:5173"
+            allowed_headers: "Content-Type, Authorization, X-Requested-With, X-CSRF-TOKEN"
+            allowed_methods: "GET,POST"
             allow_credentials: true
-        content_type: 'application/json'
+            max_age: 600
 service:
     refresh_sessions_cleaner:
         command: "php src/backend/Services/RefreshSessionsCleaner.php"

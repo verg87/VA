@@ -31,7 +31,7 @@ class Transaction extends Model
         v::intType()->positive()->assert($receiverCardId);
 
         v::alpha()->containsAny(["transfer", "check", "cash"])->assert($depositType);
-        v::floatType()->between(0, 100000)->assert($amount); // transaction limit
+        v::floatType()->between(0, 1000000)->assert($amount); // transaction limit
 
         v::nullOr(v::intType()->positive())->assert($cardId);
     }
@@ -63,7 +63,7 @@ class Transaction extends Model
     public function getAllByUserId(int $userId): array|bool
     {
         try {
-            $userId = $this->validateId($userId);
+            v::intType()->positive()->assert($userId);
 
             $stmt = $this->db->prepare(
                 "SELECT * FROM transactions WHERE user_id = :ui OR receiver_user_id = :rui"

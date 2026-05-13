@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Responses;
 
-require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
-
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Helpers;
 
-require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
-
 class Functions
 {
     static function array_all(array $array, callable $callable): bool

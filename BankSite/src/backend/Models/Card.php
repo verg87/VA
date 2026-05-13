@@ -6,10 +6,13 @@ namespace App\Models;
 
 require_once __DIR__ . "/../../../vendor/autoload.php";
 
+use Respect\Validation\ValidatorBuilder as v;
+
 use App\DB;
 use App\Model;
 use App\Vault\Vault;
 use App\Helpers\Functions;
+use App\Helpers\CardTypes;
 
 use DateTimeImmutable;
 use Exception;
@@ -29,81 +32,46 @@ class Card extends Model
     /**
      * @throws InvalidArgumentException|Exception
      */
-    private function validateCardCreationArgs(int $userId, string $cardNumber, string $cardType, float $amount, string $expiresAt, string $cvv): array
+    private function validate(int $userId, string $cardNumber, string $cardType, float $amount, string $expiresAt, string $cvv): void
     {
-        $validatedUserId = $this->validateId($userId);
+        v::intType()->positive()->assert($userId);
+        
+        if ($cardType === CardTypes::Credit->value) {
+            v::creditCard()->assert($cardNumber);
+        }
 
         if (!preg_match("/^\d{4} \d{4} \d{4} \d{4}$/", $cardNumber)) {
             throw new InvalidArgumentException("Invalid card number format");
         }
 
-        if (!in_array($cardType, ["debit", "credit", "overdraft", "prepaid"])) {
-            throw new InvalidArgumentException("Invalid card type");
+        v::alpha()->containsAny(["credit", "debit", "prepaid", "overdraft"])->assert($cardType);
+        v::floatType()->between(0, 1000000)->assert($amount);
+        v::stringType()->length(v::equals(3))->intVal()->assert($cvv);
+        v::date("m/y")->assert($expiresAt);
+    }
+
+    private function prepareExpirationTime(string $expiresAt): int
+    {
+        $expiresAtDate = DateTimeImmutable::createFromFormat('m/y', $expiresAt);
+        if ($expiresAtDate === false) {
+            throw new InvalidArgumentException('Invalid expiration date format. Use "mm/yy"');
         }
-
-        $validatedAmount = filter_var($amount, FILTER_VALIDATE_FLOAT, [
-            "options" => ["min_range" => 0, "max_range" => 1000000]
-        ]);
-        if ($validatedAmount === false) {
-            throw new InvalidArgumentException("Invalid amount");
-        }
-
-        try {
-            list($firstNumber, $secondNumber, $thirdNumber) = str_split($cvv);
-
-            $validatedFirstNumber = filter_var($firstNumber, FILTER_VALIDATE_INT, [
-                "options" => ["min_range" => 0, "max_range" => 9]
-            ]);
-
-            $validatedSecondNumber = filter_var($secondNumber, FILTER_VALIDATE_INT, [
-                "options" => ["min_range" => 0, "max_range" => 9]
-            ]);
-
-            $validatedThirdNumber = filter_var($thirdNumber, FILTER_VALIDATE_INT, [
-                "options" => ["min_range" => 0, "max_range" => 9]
-            ]);
-
-            if ($validatedFirstNumber === false || $validatedSecondNumber === false || $validatedThirdNumber === false) {
-                throw new InvalidArgumentException("Invalid CVV");
-            }
-
-            $validatedCvv = $validatedFirstNumber . $validatedSecondNumber . $validatedThirdNumber;
-        } catch (Exception $e) {
-            throw new InvalidArgumentException("Invalid CVV");
-        }
-
-        try {
-            $expiresAtDate = DateTimeImmutable::createFromFormat('m/y', $expiresAt);
-            if ($expiresAtDate === false) {
-                throw new InvalidArgumentException('Invalid expiration date format. Use "mm/yy"');
-            }
-            $expiresAtTimestamp = $expiresAtDate->modify('last day of this month')->getTimestamp();
-        } catch (Exception $e) {
-            throw new InvalidArgumentException('Error processing expiration date: ' . $e->getMessage());
-        }
-
-        return [
-            "userId" => $validatedUserId,
-            "cardNumber" => $cardNumber,
-            "cardType" => $cardType,
-            "amount" => $validatedAmount,
-            "expiresAt" => $expiresAtTimestamp,
-            "cvv" => $validatedCvv,
-        ];
+        return $expiresAtDate->modify('last day of this month')->getTimestamp();
     }
 
     public function create(int $userId, string $cardNumber, string $cardType, float $amount = 0, string $expiresAt, string $cvv): bool
     {
         try {
-            $validatedData = $this->validateCardCreationArgs($userId, $cardNumber, $cardType, $amount, $expiresAt, $cvv);
+            $this->validate($userId, $cardNumber, $cardType, $amount, $expiresAt, $cvv);
+            $expiresAt = $this->prepareExpirationTime($expiresAt);
 
             $algo = $_ENV['ENVELOPE_ENCRYPTION_ALGO'];
             $taglen = (int) $_ENV["TAG_LENGTH"];
 
             $dataKey = openssl_random_pseudo_bytes(openssl_cipher_key_length($algo));
 
-            $encryptedCardNumber = $this->encrypt($validatedData['cardNumber'], $dataKey, $algo, $taglen);
-            $encryptedCVV = $this->encrypt($validatedData['cvv'], $dataKey, $algo, $taglen);
+            $encryptedCardNumber = $this->encrypt($cardNumber, $dataKey, $algo, $taglen);
+            $encryptedCVV = $this->encrypt($cvv, $dataKey, $algo, $taglen);
 
             $masterKey = $this->vault->getKV("masterkey");
             if (!$masterKey) {
@@ -118,12 +86,12 @@ class Card extends Model
             );
 
             return $stmt->execute([
-                ":ui" => $validatedData["userId"],
+                ":ui" => $userId,
                 ":cn" => $encryptedCardNumber,
                 ":sk" => $encryptedDataKey,
-                ":ct" => $validatedData["cardType"],
-                ":am" => $validatedData["amount"],
-                ":ea" => $validatedData["expiresAt"],
+                ":ct" => $cardType,
+                ":am" => $amount,
+                ":ea" => $expiresAt,
                 ":cv" => $encryptedCVV
             ]);
         } catch (Exception $e) {
@@ -138,18 +106,20 @@ class Card extends Model
         return (int) $this->db->lastInsertId();
     }
 
-    private function validateTransfer(array $sender, array $receiver, float $amount): bool 
+    private function validateTransfer(array $sender, array $receiver, float $amount): void 
     {
-        if ($sender["card_type"] === "debit" && $sender["amount"] - $amount >= 0) {
-            return true;
-        } 
-
-        // need to write about credit card balance limit
-        if ($sender["card_type"] === "credit" && $sender["amount"] - $amount >= -10000) {
-            return true;
-        }
-
-        return false;
+        v::anyOf(
+            v::allOf(
+                v::equals("debit")->assert($sender["card_type"]), 
+                v::greaterThanOrEqual(0)->floatVal()->assert($sender["amount"] - $amount)
+            ),
+            v::allOf(
+                v::equals("credit")->assert($sender["card_type"]),
+                v::greaterThanOrEqual(-10000)->floatVal()->assert($sender["amount"] - $amount)
+            ),
+            v::stringType()->notEquals("prepaid")->assert($receiver["card_type"]),
+            v::floatType()->positive()->lessThanOrEqual(1000000)->assert($amount)
+        );
     }
 
     private function updateAmount(array $card, float $amount): bool
@@ -174,9 +144,7 @@ class Card extends Model
             $senderCard = $this->getById($senderCardId);
             $receiverCard = $this->getById($receiverCardId);
 
-            if (!$this->validateTransfer($senderCard, $receiverCard, $amount)) {
-                return false;
-            }
+            $this->validateTransfer($senderCard, $receiverCard, $amount);
 
             $senderNewAmount = $senderCard["amount"] - $amount;
             $receiverNewAmount = $receiverCard["amount"] + $amount;
@@ -195,17 +163,10 @@ class Card extends Model
         }
     }
 
-    private function validateDeposit(array $receiver, float $amount): bool
+    private function validateDeposit(array $receiver, float $amount): void
     {
-        if ($receiver["card_type"] === "prepaid") {
-            return false;
-        }
-
-        $validatedAmount = filter_var($amount, FILTER_VALIDATE_FLOAT, [
-            "options" => ["min_range" => 0, "max_range" => 1000000]
-        ]);
-
-        return true && $validatedAmount !== false;
+        v::stringType()->notEquals("prepaid")->assert($receiver["card_type"]);
+        v::floatType()->positive()->lessThanOrEqual(1000000)->assert($amount);
     }
 
     public function deposit(int $receiverCardId, float $amount): bool
@@ -213,9 +174,7 @@ class Card extends Model
         try {
             $receiverCard = $this->getById($receiverCardId);
 
-            if (!$this->validateDeposit($receiverCard, $amount)) {
-                return false;
-            }
+            $this->validateDeposit($receiverCard, $amount);
 
             return $this->updateAmount($receiverCard, $receiverCard["amount"] + $amount);
         } catch (Exception $e) {
@@ -250,7 +209,7 @@ class Card extends Model
     public function getById(int $id): array|bool
     {
         try {
-            $id = $this->validateId($id);
+            v::intType()->positive()->assert($id);
 
             $stmt = $this->db->prepare(
                 "SELECT * FROM cards WHERE id = :id"
@@ -270,13 +229,7 @@ class Card extends Model
     public function getByIds(array $ids): array|bool
     {
         try {
-            if (empty($ids)) {
-                return false;
-            }
-
-            foreach ($ids as $id) {
-                $this->validateId($id);
-            }
+            v::notBlank()->allIntType()->allPositive()->assert($ids);
 
             $placeholders = implode(', ', array_fill(0, count($ids), '?'));
             $stmt = $this->db->prepare("SELECT id, user_id, card_type FROM cards WHERE id IN ($placeholders)");
@@ -296,7 +249,7 @@ class Card extends Model
     public function getByUserId(int $userId): array|bool
     {
         try {
-            $userId = $this->validateId($userId);
+            v::intType()->positive()->assert($userId);
 
             $stmt = $this->db->prepare(
                 "SELECT * FROM cards WHERE user_id = :ui"
@@ -341,7 +294,7 @@ class Card extends Model
     public function updateSecretKey(int $id, string $newSecretKey): bool
     {
         try {
-            $id = $this->validateId($id);
+            v::intType()->positive()->assert($id);
 
             $stmt = $this->db->prepare(
                 "UPDATE cards SET secret_key = :sk WHERE id = :id"

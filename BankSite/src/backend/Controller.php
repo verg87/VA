@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App;
 
-require_once __DIR__ . "\\..\\..\\vendor\\autoload.php";
-
 use App\Model;
 use App\Vault\Vault;
 use Psr\Http\Message\ResponseInterface;

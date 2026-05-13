@@ -6,12 +6,13 @@ namespace App\Models;
 
 require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
 
+use Respect\Validation\ValidatorBuilder as v;
+
 use App\DB;
 use App\Model;
 
 use App\Vault\Vault;
 use Exception;
-use InvalidArgumentException;
 
 class RefreshSession extends Model
 {
@@ -23,28 +24,12 @@ class RefreshSession extends Model
         $this->vault = $vault;
     }
 
-    private function validateRefSessionCreationArgs(int $userId, string $jti, string $userAgent, string $ipAddress, int $expiresAt): array
+    private function validate(int $userId, string $ipAddress, int $expiresAt): void
     {
-        $validatedUserId = $this->validateId($userId);
-        $validatedIpAddress = filter_var($ipAddress, FILTER_VALIDATE_IP);
+        v::intType()->positive()->assert($userId);
+        v::ip()->assert($ipAddress);
 
-        if ($validatedIpAddress === false) {
-            throw new InvalidArgumentException("Invalid IP address");
-        }
-
-        $validatedExpiresAt = filter_var($expiresAt, FILTER_VALIDATE_INT);
-
-        if ($validatedExpiresAt === false) {
-            throw new InvalidArgumentException("Invalid expiration date");
-        }
-
-        return [
-            "userId" => $validatedUserId,
-            "jti" => $jti,
-            "userAgent" => $userAgent,
-            "ipAddress" => $validatedIpAddress,
-            "expiresAt" => $validatedExpiresAt,
-        ];
+        v::intType()->positive()->assert($expiresAt);
     }
 
     public function create(
@@ -55,23 +40,23 @@ class RefreshSession extends Model
         int $expiresAt
     ): bool {
         try {
-            $validatedData = $this->validateRefSessionCreationArgs($userId, $jti, $userAgent, $ipAddress, $expiresAt);
+            $this->validate($userId, $ipAddress, $expiresAt);
 
             $stmt = $this->db->prepare(
                 "INSERT INTO refresh_sessions (user_id, jti, user_agent, ip_address, expires_at) VALUES (:ui, :ji, :ua, :ia, :ea)"
             );
 
             $refkey = $this->vault->getKV("refkey");
-            $hashedJTI = hash_hmac("sha512", $validatedData["jti"], $refkey);
-            $hashedUserAgent = hash_hmac("sha512", $validatedData["userAgent"], $refkey);
-            $hashedIpAddress = hash_hmac("sha512", $validatedData["ipAddress"], $refkey);
+            $hashedJTI = hash_hmac("sha512", $jti, $refkey);
+            $hashedUserAgent = hash_hmac("sha512", $userAgent, $refkey);
+            $hashedIpAddress = hash_hmac("sha512", $ipAddress, $refkey);
 
             return $stmt->execute([
-                ":ui" => $validatedData["userId"],
+                ":ui" => $userId,
                 ":ji" => $hashedJTI,
                 ":ua" => $hashedUserAgent,
                 ":ia" => $hashedIpAddress,
-                ":ea" => $validatedData["expiresAt"]
+                ":ea" => $expiresAt,
             ]);
         } catch (Exception $e) {
             var_dump($e->getMessage());
@@ -81,21 +66,24 @@ class RefreshSession extends Model
 
     public function deleteByJTIS(array $jtis): array
     {
-        if (empty($jtis)) {
+        try {
+            v::notBlank()->allStringType()->assert($jtis);
+
+            $placeholders = implode(', ', array_fill(0, count($jtis), '?'));
+            $stmt = $this->db->prepare("DELETE FROM refresh_sessions WHERE jti IN ($placeholders)");
+
+            foreach ($jtis as $index => $jti) {
+                $stmt->bindValue($index + 1, $jti);
+            }
+
+            $status = $stmt->execute();
+            $numOfDeleted = $stmt->rowCount();
+
+            return ["status" => $status ? "success" : "failure", "deleted" => $numOfDeleted];
+        } catch (Exception $e) {
+            var_dump($e->getMessage());
             return ["status" => "success", "deleted" => 0];
         }
-
-        $placeholders = implode(', ', array_fill(0, count($jtis), '?'));
-        $stmt = $this->db->prepare("DELETE FROM refresh_sessions WHERE jti IN ($placeholders)");
-
-        foreach ($jtis as $index => $jti) {
-            $stmt->bindValue($index + 1, $jti);
-        }
-
-        $status = $stmt->execute();
-        $numOfDeleted = $stmt->rowCount();
-
-        return ["status" => $status ? "success" : "failure", "deleted" => $numOfDeleted];
     }
 
     public function getAll(): array|bool
@@ -108,24 +96,27 @@ class RefreshSession extends Model
 
     public function get(string $jti): array|bool
     {
-        if (empty($jti)) {
+        try {
+            v::stringType()->notBlank()->assert($jti);
+
+            $stmt = $this->db->prepare("SELECT * FROM refresh_sessions WHERE jti = :jti");
+
+            $refkey = $this->vault->getKV("refkey");
+            $hashedJTI = hash_hmac("sha512", $jti, $refkey);
+            $stmt->bindParam(":jti", $hashedJTI);
+
+            $stmt->execute();
+            return $stmt->fetch();
+        } catch (Exception $e) {
+            var_dump($e->getMessage());
             return false;
         }
-
-        $stmt = $this->db->prepare("SELECT * FROM refresh_sessions WHERE jti = :jti");
-
-        $refkey = $this->vault->getKV("refkey");
-        $hashedJTI = hash_hmac("sha512", $jti, $refkey);
-        $stmt->bindParam(":jti", $hashedJTI);
-
-        $stmt->execute();
-        return $stmt->fetch();
     }
 
     public function deleteByUserId(int $userId): bool
     {
         try {
-            $userId = $this->validateId($userId);
+            v::intType()->positive()->assert($userId);
 
             $stmt = $this->db->prepare("DELETE FROM refresh_sessions WHERE user_id = :ui");
             $stmt->bindParam(":ui", $userId);
@@ -139,17 +130,20 @@ class RefreshSession extends Model
 
     public function update(string $jti): bool
     {
-        if (empty($jti)) {
+        try {
+            v::stringType()->notBlank()->assert($jti);
+
+            $stmt = $this->db->prepare("UPDATE refresh_sessions SET is_revoked = 1 WHERE jti = :ji");
+
+            $refkey = $this->vault->getKV("refkey");
+            $hashedJTI = hash_hmac("sha512", $jti, $refkey);
+            $stmt->bindParam(":ji", $hashedJTI);
+
+            $stmt->execute();
+            return $stmt->rowCount() > 0;
+        } catch (Exception $e) {
+            var_dump($e->getMessage());
             return false;
         }
-
-        $stmt = $this->db->prepare("UPDATE refresh_sessions SET is_revoked = 1 WHERE jti = :ji");
-
-        $refkey = $this->vault->getKV("refkey");
-        $hashedJTI = hash_hmac("sha512", $jti, $refkey);
-        $stmt->bindParam(":ji", $hashedJTI);
-
-        $stmt->execute();
-        return $stmt->rowCount() > 0;
     }
 }

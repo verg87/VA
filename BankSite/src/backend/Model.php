@@ -7,8 +7,6 @@ namespace App;
 use Exception;
 use InvalidArgumentException;
 
-require_once __DIR__ . "\\..\\..\\vendor\\autoload.php";
-
 abstract class Model
 {
     protected DB $db;

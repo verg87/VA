@@ -6,12 +6,11 @@ namespace App\Models;
 
 require_once __DIR__ . "/../../../vendor/autoload.php";
 
+use Respect\Validation\ValidatorBuilder as v;
+
 use App\DB;
 use App\Model;
-use App\Vault\Vault;
-use App\Helpers\Functions;
 
-use DateTimeImmutable;
 use Exception;
 use InvalidArgumentException;
 
@@ -25,26 +24,24 @@ class Account extends Model
     /**
      * @throws InvalidArgumentException|Exception
      */
-    private function validateAccountCreationArgs(int $userId, int $cardId): array
+    private function validate(int $userId, int $cardId): void
     {
-        return [
-            "userId" => $this->validateId($userId),
-            "cardId" => $this->validateId($cardId),
-        ];
+        v::intType()->positive()->assert($userId);
+        v::intType()->positive()->assert($cardId);
     }
 
     public function create(int $userId, int $cardId): bool
     {
         try {
-            $validatedData = $this->validateAccountCreationArgs($userId, $cardId);
+            $this->validate($userId, $cardId);
 
             $stmt = $this->db->prepare(
                 "INSERT INTO accounts (user_id, card_id) VALUES (:ui, :ci)"
             );
 
             return $stmt->execute([
-                ":ui" => $validatedData["userId"],
-                ":ci" => $validatedData["cardId"]
+                ":ui" => $userId,
+                ":ci" => $cardId
             ]);
         } catch (Exception $e) {
             // maybe log it
@@ -56,7 +53,7 @@ class Account extends Model
     public function getByUserId(int $userId): array|bool
     {
         try {
-            $userId = $this->validateId($userId);
+            v::intType()->positive()->assert($userId);
 
             $stmt = $this->db->prepare(
                 "SELECT * FROM accounts WHERE user_id = :ui"
