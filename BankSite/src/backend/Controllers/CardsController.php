@@ -36,7 +36,16 @@ class CardsController extends Controller
 
     private function get(ServerRequestInterface $request): ResponseInterface
     {
-        list("query" => $query) = $this->requestInfo($request);
+        list("query" => $query, "attributes" => $attributes) = $this->requestInfo($request);
+
+        if (
+            !isset($attributes["user"]) || 
+            gettype($attributes["user"]) !== "array" || 
+            $attributes["user"]["id"] !== (int) ($query["user_id"] ?? -1)
+        ) {
+            var_dump($attributes["user"] ?? null, $data["user_id"] ?? null);
+            return ResponseFactory::create(401)();
+        } 
 
         if (isset($query["user_id"]) && $query["user_id"] !== "") {
             $cardInfo = $this->card->getByUserId((int) $query["user_id"]);
@@ -64,7 +73,15 @@ class CardsController extends Controller
 
     private function post(ServerRequestInterface $request): ResponseInterface
     {
-        list("data" => $data) = $this->requestInfo($request);
+        list("data" => $data, "attributes" => $attributes) = $this->requestInfo($request);
+
+        if (
+            !isset($attributes["user"]) || 
+            gettype($attributes["user"]) !== "array" || 
+            $attributes["user"]["id"] !== (int) ($data["user_id"] ?? -1)
+        ) {
+            return ResponseFactory::create(401)();
+        } 
 
         if (Functions::array_all($data, fn($value) => $value !== "")) {
             list(

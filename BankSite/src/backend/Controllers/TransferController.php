@@ -39,7 +39,15 @@ class TransferController extends Controller
 
     private function post(ServerRequestInterface $request): ResponseInterface
     {
-        list("data" => $data) = $this->requestInfo($request);
+        list("data" => $data, "attributes" => $attributes) = $this->requestInfo($request);
+
+        if (
+            !isset($attributes["user"]) || 
+            gettype($attributes["user"]) !== "array" || 
+            $attributes["user"]["id"] !== (int) ($data["user_id"] ?? -1)
+        ) {
+            return ResponseFactory::create(401)();
+        } 
 
         if (Functions::array_all($data, fn($value) => $value !== "")) {
             list(

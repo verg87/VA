@@ -33,8 +33,37 @@ class AccessUserController extends Controller
         return ResponseFactory::create(405)();
     }
 
+    private function validate($request): array|bool
+    {
+        $cookie = $request->getCookieParams()["access-token"] ?? false;
+
+        if ($cookie == false) {
+            var_dump($cookie);
+            var_dump("no cookie from validate");
+            return false;
+        } 
+
+        try {
+            $payload = (array) JWT::decode($cookie, new Key($this->vault->getKV("jwtkey"), $_ENV["ALGORITHM"]));
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        $user = $this->user->getById($payload["sub"]);
+        
+        if (!$user) {
+            return false;
+        }
+
+        return $user;
+    }
+
     private function get(ServerRequestInterface $request): ResponseInterface
     {
+        if ($this->validate($request) === false) {
+            return ResponseFactory::create(401)();
+        }
+        
         list("query" => $query) = $this->requestInfo($request);
 
         if (isset($query["phone_number"]) && $query["phone_number"] !== "") {
@@ -52,22 +81,10 @@ class AccessUserController extends Controller
 
     private function post(ServerRequestInterface $request): ResponseInterface
     {
-        $cookie = $request->getCookieParams()["access-token"] ?? false;
+        $user = $this->validate($request);
 
-        if ($cookie == false) {
+        if ($user === false) {
             return ResponseFactory::create(401)();
-        } 
-
-        try {
-            $payload = (array) JWT::decode($cookie, new Key($this->vault->getKV("jwtkey"), $_ENV["ALGORITHM"]));
-        } catch (\Throwable $e) {
-            return ResponseFactory::create(401)();
-        }
-
-        $user = $this->user->getById($payload["sub"]);
-        
-        if (!$user) {
-            return ResponseFactory::create(500)();
         }
 
         // unset($user["id"]);

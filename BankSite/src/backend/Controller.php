@@ -36,6 +36,7 @@ abstract class Controller
                 : $request->getServerParams()["HTTP_CLIENT_IP"]);
 
         return [
+            "attributes" => $request->getAttributes(),
             "query" => $request->getQueryParams(),
             "data" => $data,
             "userAgent" => $userAgent,

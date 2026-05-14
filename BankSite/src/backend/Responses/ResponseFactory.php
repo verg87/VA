@@ -9,7 +9,7 @@ use Psr\Http\Message\ResponseInterface;
 
 class ResponseFactory
 {
-    public static function create(int $statusCode)
+    public static function create(int $statusCode): ResponseInterface
     {
         return match($statusCode) 
         {

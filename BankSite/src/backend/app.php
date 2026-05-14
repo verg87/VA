@@ -13,6 +13,7 @@ use App\Config;
 use App\Vault\Vault;
 use Symfony\Component\Dotenv\Dotenv;
 use League\Route\Router;
+use League\Route\RouteGroup;
 use Nyholm\Psr7\Response;
 use Nyholm\Psr7\Factory\Psr17Factory;
 
@@ -38,6 +39,8 @@ use App\Models\Transaction;
 use App\Models\RefreshSession;
 use App\Models\User;
 
+use App\Middleware\AuthMiddleware;
+
 $dotenv = new Dotenv();
 $dotenv->overload(__DIR__ . "\\..\\..\\.env", __DIR__ . "\\..\\..\\.dev.env");
 
@@ -52,17 +55,19 @@ $psr7 = new PSR7Worker($worker, $factory, $factory, $factory);
 
 $router = new Router();
 
-$router->get("/api/bank/cards", new CardsController(new Card($db, $vault), new Account($db)));
-$router->post("/api/bank/cards", new CardsController(new Card($db, $vault), new Account($db)));
-$router->get("/api/bank/transactions", new TransactionsController(new Transaction($db), new User($db), new Card($db, $vault)));
+$router->group("/api/bank", function (RouteGroup $router) use ($db, $vault) {
+    $router->get("/cards", new CardsController(new Card($db, $vault), new Account($db)));
+    $router->post("/cards", new CardsController(new Card($db, $vault), new Account($db)));
+    $router->get("/transactions", new TransactionsController(new Transaction($db), new User($db), new Card($db, $vault)));
 
-$router->post("/api/bank/deposit", new DepositController(new Card($db, $vault), new Transaction($db)));
-$router->post("/api/bank/transfer", new TransferController(
-    new User($db),
-    new Account($db),
-    new Card($db, $vault),
-    new Transaction($db)
-));
+    $router->post("/deposit", new DepositController(new Card($db, $vault), new Transaction($db)));
+    $router->post("/transfer", new TransferController(
+        new User($db),
+        new Account($db),
+        new Card($db, $vault),
+        new Transaction($db)
+    ));
+})->middleware(new AuthMiddleware($vault, new User($db)));
 
 $router->get("/api/users/", new AccessUserController(new User($db), $vault));
 $router->post("/api/users/", new AccessUserController(new User($db), $vault));

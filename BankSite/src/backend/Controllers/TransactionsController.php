@@ -27,7 +27,15 @@ class TransactionsController extends Controller
 
     private function get(ServerRequestInterface $request): ResponseInterface
     {
-        list("query" => $query) = $this->requestInfo($request);
+        list("query" => $query, "attributes" => $attributes) = $this->requestInfo($request);
+
+        if (
+            !isset($attributes["user"]) || 
+            gettype($attributes["user"]) !== "array" || 
+            $attributes["user"]["id"] !== (int) ($query["user_id"] ?? -1)
+        ) {
+            return ResponseFactory::create(401)();
+        } 
 
         if (isset($query["user_id"]) && $query["user_id"] !== "") {
             try {

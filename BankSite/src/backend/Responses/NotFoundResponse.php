@@ -7,7 +7,7 @@ namespace App\Responses;
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 
-class NotFoundResponse 
+class NotFoundResponse extends Response
 {
     public function __invoke(
         array $headers = [], 
