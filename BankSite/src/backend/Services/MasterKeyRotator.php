@@ -6,22 +6,9 @@ namespace App\Services;
 
 require __DIR__ . '\\..\\..\\..\\vendor\\autoload.php';
 
-use Symfony\Component\Dotenv\Dotenv; 
-
-use App\DB;
-use App\Config;
+$container = require_once __DIR__ . "\\..\\Container.php";
 
 use App\Services\Workers\MasterKeyWorker;
 
-use App\Vault\Vault;
-use App\Models\Card;
-
-$dotenv = new Dotenv();
-$dotenv->overload(__DIR__ . "\\..\\..\\..\\.env", __DIR__ . "\\..\\..\\..\\.dev.env");
-
-$config = (new Config($_ENV))->config;
-$db = DB::getInstance($config);
-$vault = new Vault($config);
-
-$worker = new MasterKeyWorker($vault, new Card($db, $vault));
+$worker = $container->get(MasterKeyWorker::class);
 $worker->run();

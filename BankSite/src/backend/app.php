@@ -4,14 +4,11 @@ declare(strict_types=1);
 
 namespace App;
 
-require __DIR__ . '\\..\\..\\vendor\\autoload.php';
+require __DIR__ . "\\..\\..\\vendor\\autoload.php";
+$container = require_once __DIR__ . "\\Container.php";
 
 ini_set('display_errors', 'stderr');
 
-use App\DB;
-use App\Config;
-use App\Vault\Vault;
-use Symfony\Component\Dotenv\Dotenv;
 use League\Route\Router;
 use League\Route\RouteGroup;
 use Nyholm\Psr7\Response;
@@ -32,28 +29,7 @@ use App\Controllers\SignUpController;
 use App\Controllers\LogOutController;
 use App\Controllers\RefreshTokenController;
 
-use DI\Container;
-
 use App\Middleware\AuthMiddleware;
-
-$dotenv = new Dotenv();
-$dotenv->overload(__DIR__ . "\\..\\..\\.env", __DIR__ . "\\..\\..\\.dev.env");
-
-$container = new Container();
-
-$container->set(Config::class, function () {
-    return new Config($_ENV);
-});
-
-$container->set(DB::class, function ($container) {
-    $config = $container->get(Config::class);
-    return DB::getInstance($config->config);
-});
-
-$container->set(Vault::class, function ($container) {
-    $config = $container->get(Config::class);
-    return new Vault($config->config);
-});
 
 $worker = Worker::create();
 
