@@ -43,7 +43,6 @@ class CardsController extends Controller
             gettype($attributes["user"]) !== "array" || 
             $attributes["user"]["id"] !== (int) ($query["user_id"] ?? -1)
         ) {
-            var_dump($attributes["user"] ?? null, $data["user_id"] ?? null);
             return ResponseFactory::create(401)();
         } 
 
@@ -57,11 +56,9 @@ class CardsController extends Controller
 
                     return $card;
                 }, $cardInfo);
-                var_dump($cardInfo);
 
                 return ResponseFactory::create(200)(data: $cardInfo);
             } else if (gettype($cardInfo) === "array" && gettype($mainAccount) !== "array") {
-                var_dump($cardInfo);
                 return ResponseFactory::create(200)(data: $cardInfo);
             }
 

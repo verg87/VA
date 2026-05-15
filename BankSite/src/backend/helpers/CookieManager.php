@@ -33,8 +33,8 @@ class CookieManager
     
         return [
             "Set-Cookie" => [
-                "access-token=" . $accessToken . ";HttpOnly" . ";Max-Age=" . $at . ";SameSite=Strict",
-                "refresh-token=" . $refreshToken . ";HttpOnly" . ";Max-Age=" . $rt . ";SameSite=Strict",
+                "access-token=" . $accessToken . ";HttpOnly" . ";Max-Age=" . $at . ";SameSite=Strict" . ";Path=/api",
+                "refresh-token=" . $refreshToken . ";HttpOnly" . ";Max-Age=" . $rt . ";SameSite=Strict" . ";Path=/api",
             ]
         ];
     }

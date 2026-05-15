@@ -32,21 +32,28 @@ use App\Controllers\SignUpController;
 use App\Controllers\LogOutController;
 use App\Controllers\RefreshTokenController;
 
-use App\Models\Card;
-use App\Models\Account;
-use App\Models\Transaction;
-
-use App\Models\RefreshSession;
-use App\Models\User;
+use DI\Container;
 
 use App\Middleware\AuthMiddleware;
 
 $dotenv = new Dotenv();
 $dotenv->overload(__DIR__ . "\\..\\..\\.env", __DIR__ . "\\..\\..\\.dev.env");
 
-$config = (new Config($_ENV))->config;
-$db = DB::getInstance($config);
-$vault = new Vault($config);
+$container = new Container();
+
+$container->set(Config::class, function () {
+    return new Config($_ENV);
+});
+
+$container->set(DB::class, function ($container) {
+    $config = $container->get(Config::class);
+    return DB::getInstance($config->config);
+});
+
+$container->set(Vault::class, function ($container) {
+    $config = $container->get(Config::class);
+    return new Vault($config->config);
+});
 
 $worker = Worker::create();
 
@@ -55,27 +62,23 @@ $psr7 = new PSR7Worker($worker, $factory, $factory, $factory);
 
 $router = new Router();
 
-$router->group("/api/bank", function (RouteGroup $router) use ($db, $vault) {
-    $router->get("/cards", new CardsController(new Card($db, $vault), new Account($db)));
-    $router->post("/cards", new CardsController(new Card($db, $vault), new Account($db)));
-    $router->get("/transactions", new TransactionsController(new Transaction($db), new User($db), new Card($db, $vault)));
+$router->group("/api/bank", function (RouteGroup $router) use ($container) {
+    $router->get("/cards", $container->get(CardsController::class));
+    $router->post("/cards", $container->get(CardsController::class));
+    $router->get("/transactions", $container->get(TransactionsController::class));
 
-    $router->post("/deposit", new DepositController(new Card($db, $vault), new Transaction($db)));
-    $router->post("/transfer", new TransferController(
-        new User($db),
-        new Account($db),
-        new Card($db, $vault),
-        new Transaction($db)
-    ));
-})->middleware(new AuthMiddleware($vault, new User($db)));
+    $router->post("/deposit", $container->get(DepositController::class));
+    $router->post("/transfer", $container->get(TransferController::class));
+})->middleware($container->get(AuthMiddleware::class));
 
-$router->get("/api/users/", new AccessUserController(new User($db), $vault));
-$router->post("/api/users/", new AccessUserController(new User($db), $vault));
-$router->post("/api/users/sign-up", new SignUpController(new User($db)));
-$router->post("/api/users/login", new LoginController(new User($db)));
-$router->post("/api/users/auth", new AuthController(new User($db), $vault));
-$router->post("/api/users/refresh-token", new RefreshTokenController(new RefreshSession($db, $vault), $vault));
-$router->post("/api/users/log-out", new LogOutController(new RefreshSession($db, $vault), $vault));
+$router->get("/api/users/", $container->get(AccessUserController::class));
+$router->post("/api/users/", $container->get(AccessUserController::class));
+$router->post("/api/users/sign-up", $container->get(SignUpController::class));
+$router->post("/api/users/login", $container->get(LoginController::class));
+$router->post("/api/users/auth", $container->get(AuthController::class));
+$router->post("/api/users/refresh-token", $container->get(RefreshTokenController::class));
+$router->post("/api/users/log-out", $container->get(LogOutController::class));
+
 
 while (true) {
     try {

@@ -38,8 +38,6 @@ class AccessUserController extends Controller
         $cookie = $request->getCookieParams()["access-token"] ?? false;
 
         if ($cookie == false) {
-            var_dump($cookie);
-            var_dump("no cookie from validate");
             return false;
         } 
 

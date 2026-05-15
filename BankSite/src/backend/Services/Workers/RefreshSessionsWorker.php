@@ -30,7 +30,12 @@ class RefreshSessionsWorker extends Worker
             }
         }
 
-        list("status" => $status, "deleted" => $deleted) = $this->refreshSession->deleteByJTIS($jtisToDelete);
+        if (!empty($jtisToDelete)) {
+            list("status" => $status, "deleted" => $deleted) = $this->refreshSession->deleteByJTIS($jtisToDelete);
+        } else {
+            $status = "success";
+            $deleted = "0";
+        }
 
         if ($status === "success" && $deleted === 0) {
             $this->log("No expired refresh tokens to delete");
