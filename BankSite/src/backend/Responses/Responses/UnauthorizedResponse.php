@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Responses;
+namespace App\Responses\Responses;
 
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;

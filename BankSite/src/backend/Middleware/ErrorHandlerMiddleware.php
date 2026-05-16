@@ -2,24 +2,26 @@
 
 namespace App\Middleware;
 
-use App\Responses\ResponseFactory;
-use Monolog\Logger;
+use League\Route\Http\Exception;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Throwable;
-use App\Log;
+
+use App\Responses\ResponseFactory;
+use App\Helpers\LoggerTrait;
 
 class ErrorHandlerMiddleware implements MiddlewareInterface
 {
-    protected Log $log;
-    protected Throwable|null $exception;
+    use LoggerTrait;
+    protected Throwable|Exception|null $exception;
+    protected string $name;
 
-    public function __construct(Throwable|null $exception, string $name, string $file) 
+    public function __construct(Throwable|Exception|null $exception, string $name) 
     {
-        $this->log = new Log($name, $file, Logger::ERROR);
         $this->exception = $exception;
+        $this->name = $name;
     }
 
     public function process(
@@ -29,19 +31,13 @@ class ErrorHandlerMiddleware implements MiddlewareInterface
         if ($this->exception === null) {
             return $handler->handle($request);
         } else {
-            $this->log($this->exception);
+            $this->log($this->exception, $this->name, $request->getMethod(), (string) $request->getUri());
+
+            if ($this->exception instanceof Exception) {
+                return ResponseFactory::create($this->exception->getStatusCode())();
+            }
+
             return ResponseFactory::create(500)();
         }
-    }
-
-    private function log(Throwable $exception): void
-    {
-        $message = $exception->getMessage();
-        $file = $exception->getFile();
-        $line = $exception->getLine();
-
-        $logMessage = "{$message}, {$file}, {$line}" . "\n";
-
-        $this->log->error($logMessage);
     }
 }

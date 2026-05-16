@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace App\Responses;
+namespace App\Responses\Responses;
 
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 
-class NotFoundResponse extends Response
+class MethodNotAllowedResponse extends Response
 {
     public function __invoke(
         array $headers = [], 
         string $status = "error",
-        string $message = "Resource not found"
+        string $message = "Method not allowed"
     ): ResponseInterface
     {
         return new Response(
-            404, $headers, json_encode(["status" => $status, "message" => $message])
+            405, $headers, json_encode(["status" => $status, "message" => $message])
         );
     }
 }

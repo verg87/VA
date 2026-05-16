@@ -21,4 +21,9 @@ class Log
     {
         return call_user_func_array([$this->logger, $name], $arguments);
     }
+
+    public static function create(string $name, string $file, int $level = Logger::DEBUG): static
+    {
+        return new static($name, $file, $level);
+    }
 }

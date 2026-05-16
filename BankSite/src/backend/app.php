@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App;
 
+use App\Responses\ResponseFactory;
+use Psr\Http\Message\ServerRequestInterface;
+use Throwable;
+
 require __DIR__ . "\\..\\..\\vendor\\autoload.php";
 $container = require_once __DIR__ . "\\Container.php";
 
@@ -30,8 +34,8 @@ use App\Controllers\LogOutController;
 use App\Controllers\RefreshTokenController;
 
 use App\Middleware\AuthMiddleware;
-use App\Middleware\ErrorHandlerMiddleware;
 use App\Strategies\ErrorHandlerStrategy;
+use App\Responses\LoggedResponse;
 
 $worker = Worker::create();
 
@@ -65,10 +69,14 @@ while (true) {
         if ($request === null) {
             break;
         }
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         $psr7->respond(new Response(400));
         continue;
     }
 
-    $psr7->respond($router->dispatch($request));
+    try {
+        $psr7->respond($router->dispatch($request));
+    } catch (Throwable $e) {
+        $psr7->respond((new LoggedResponse($e, $request))());
+    }
 }

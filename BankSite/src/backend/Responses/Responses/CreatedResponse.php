@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace App\Responses;
+namespace App\Responses\Responses;
 
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 
-class BadRequestResponse extends Response
+class CreatedResponse extends Response
 {
     public function __invoke(
         array $headers = [], 
-        string $status = "error",
-        string $message = "Bad request"
+        string $status = "success",
+        string $message = "Resource created"
     ): ResponseInterface
     {
         return new Response(
-            400, $headers, json_encode(["status" => $status, "message" => $message])
+            201, $headers, json_encode(["status" => $status, "message" => $message])
         );
     }
 }

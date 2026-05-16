@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace App\Responses;
+namespace App\Responses\Responses;
 
 use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 
-class InternalServerErrorResponse extends Response
+class BadRequestResponse extends Response
 {
     public function __invoke(
         array $headers = [], 
         string $status = "error",
-        string $message = "Internal server error"
+        string $message = "Bad request"
     ): ResponseInterface
     {
         return new Response(
-            500, $headers, json_encode(["status" => $status, "message" => $message])
+            400, $headers, json_encode(["status" => $status, "message" => $message])
         );
     }
 }
