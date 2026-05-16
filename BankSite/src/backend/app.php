@@ -30,6 +30,8 @@ use App\Controllers\LogOutController;
 use App\Controllers\RefreshTokenController;
 
 use App\Middleware\AuthMiddleware;
+use App\Middleware\ErrorHandlerMiddleware;
+use App\Strategies\ErrorHandlerStrategy;
 
 $worker = Worker::create();
 
@@ -37,6 +39,8 @@ $factory = new Psr17Factory();
 $psr7 = new PSR7Worker($worker, $factory, $factory, $factory);
 
 $router = new Router();
+
+$router->setStrategy(new ErrorHandlerStrategy());
 
 $router->group("/api/bank", function (RouteGroup $router) use ($container) {
     $router->get("/cards", $container->get(CardsController::class));
@@ -55,7 +59,6 @@ $router->post("/api/users/auth", $container->get(AuthController::class));
 $router->post("/api/users/refresh-token", $container->get(RefreshTokenController::class));
 $router->post("/api/users/log-out", $container->get(LogOutController::class));
 
-
 while (true) {
     try {
         $request = $psr7->waitRequest();
@@ -67,10 +70,5 @@ while (true) {
         continue;
     }
 
-    try {
-        $psr7->respond($router->dispatch($request));
-    } catch (\Throwable $e) {
-        $psr7->respond(new Response(500, [], 'Something Went Wrong!'));
-        $psr7->getWorker()->error((string) $e);
-    }
+    $psr7->respond($router->dispatch($request));
 }

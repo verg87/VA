@@ -53,7 +53,7 @@ class MasterKeyWorker extends Worker
         }
 
         if ($this->card->updateSecretKeys($newEncryptedSecretKeys)) {
-            if ($this->vault->setKV("masterkey", $newMasterKey) && $this->card->commit()) {
+            if ($this->card->commit() && $this->vault->setKV("masterkey", $newMasterKey)) {
                 $this->log("Master key rotated successfully");
                 return true;
             }
