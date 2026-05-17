@@ -1,3 +1,13 @@
+<script setup>
+import { ref } from 'vue';
+
+const isVisible = ref(false);
+
+const toggleVisibility = () => {
+  isVisible.value = !isVisible.value;
+};
+</script>
+
 <template>
   <div class="relative">
     <button class="border-0 bg-gray-300 text-gray-800 rounded-full p-2 px-4.25 shadow-md hover:shadow-lg" @click="toggleVisibility">?</button>
@@ -14,13 +24,3 @@
     </div>
   </div>
 </template>
-
-<script setup>
-import { ref } from 'vue';
-
-const isVisible = ref(false);
-
-const toggleVisibility = () => {
-  isVisible.value = !isVisible.value;
-};
-</script>

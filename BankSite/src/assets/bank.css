@@ -1,145 +1,144 @@
 @import "tailwindcss";
 
-@layer components {
-    .all-page {
-        @apply size-full
-    }
+.all-page {
+    @apply size-full;
+}
 
-    .logout-btn {
-        @apply p-1 ml-4
-    }
+.logout-btn {
+    @apply p-1 ml-4;
+}
 
-    .bank-navbar {
-        @apply flex justify-between items-center px-8 py-4 border-b border-gray-400 shadow-md
-    }
+.bank-navbar {
+    @apply flex justify-between items-center px-8 py-4 border-b border-gray-400 shadow-md;
+}
 
-    .bank-nav-links {
-        @apply flex items-center gap-4
-    }
+.bank-nav-links {
+    @apply flex items-center gap-4;
+}
 
-    .bank-nav-link {
-        @apply text-gray-700 hover:text-blue-500
-    }
+.bank-nav-link {
+    @apply text-gray-700 hover:text-blue-500;
+}
 
-    .bank-user-info {
-        @apply text-gray-700
-    }
+.bank-user-info {
+    @apply text-gray-700;
+}
 
-    .bank-dashboard {
-        @apply flex flex-col w-full items-center mx-auto p-4;
-    }
+.bank-dashboard {
+    @apply flex flex-col w-full items-center mx-auto p-4;
+}
 
-    .card-create-container {
-        @apply flex flex-col items-center mt-4 px-8 pt-4 border-t border-black border-solid;
-    }
+.card-create-container {
+    @apply flex flex-col items-center mt-4 px-8 pt-4 border-t border-black border-solid;
+}
 
-    .card-create-btn {
-        @apply mt-3 px-16 py-2 bg-black rounded-3xl text-lg text-white hover:bg-neutral-800 hover:text-neutral-50 items-center;
-        transition: transform 0.1s ease-in-out;
-    }
+.card-create-btn {
+    @apply mt-3 px-16 py-2 bg-black rounded-3xl text-lg text-white hover:bg-neutral-800 hover:text-neutral-50 items-center;
+    transition: transform 0.1s ease-in-out;
+}
 
-    .card-create-btn:active {
-        transform: scale(0.98);
-        @apply bg-neutral-900;
-    }
+.card-create-btn:active {
+    transform: scale(0.98);
+    @apply bg-neutral-900;
+}
 
-    /* Modal Overlay */
-    .modal-overlay {
-        @apply fixed inset-0 w-full h-full bg-black/70 flex justify-center items-center z-1000;
-    }
+/* Modal Overlay */
+.modal-overlay {
+    @apply fixed inset-0 w-full h-full bg-black/70 flex justify-center items-center z-1000;
+}
 
-    /* Modal Container */
-    .modal-container {
-        @apply bg-white p-4 md:p-6 rounded-lg shadow-lg w-[90%] max-w-md z-1001 relative flex flex-col gap-2;
-    }
+/* Modal Container */
+.modal-container {
+    @apply bg-white p-4 md:p-6 rounded-lg shadow-lg w-[90%] max-w-md z-1001 relative flex flex-col gap-2;
+}
 
-    /* Modal Header */
-    .modal-header {
-        @apply flex justify-between items-center border-b border-gray-200 pb-4 mb-4;
-    }
+/* Modal Header */
+.modal-header {
+    @apply flex justify-between items-center border-b border-gray-200 pb-4 mb-4;
+}
 
-    .modal-title {
-        @apply text-2xl font-bold text-gray-800;
-    }
+.modal-title {
+    @apply text-2xl font-bold text-gray-800;
+}
 
-    .modal-close-btn {
-        @apply bg-transparent border-none text-3xl cursor-pointer text-gray-400 hover:text-gray-600;
-    }
+.modal-close-btn {
+    @apply bg-transparent border-none text-3xl cursor-pointer text-gray-400 hover:text-gray-600;
+}
 
-    /* Modal Body */
-    .modal-body {
-        @apply py-2;
-    }
+/* Modal Body */
+.modal-body {
+    @apply py-2;
+}
 
-    .form-group {
-        @apply mb-4;
-    }
+.form-group {
+    @apply mb-4;
+}
 
-    .form-group label {
-        @apply block mb-2 font-semibold text-gray-700;
-    }
+.form-group label {
+    @apply block mb-2 font-semibold text-gray-700;
+}
 
-    .form-group-double {
-        @apply flex gap-4;
-    }
+.form-group-double {
+    @apply flex gap-4;
+}
 
-    .modal-select,
-    .modal-input {
-        @apply w-full p-2 border border-gray-300 rounded-md text-base focus:outline-none focus:ring-2 focus:ring-blue-500;
-    }
+.modal-select,
+.modal-input {
+    @apply w-full p-2 border border-gray-300 rounded-md text-base focus:outline-none focus:ring-2 focus:ring-blue-500;
+}
 
-    /* Modal Footer */
-    .modal-footer {
-        @apply border-t border-gray-200 pt-4 mt-4 flex justify-end;
-    }
+/* Modal Footer */
+.modal-footer {
+    @apply border-t border-gray-200 pt-4 mt-4 flex justify-end;
+}
 
-    .modal-create-btn {
-        @apply bg-blue-600 text-white py-2 px-4 rounded-md cursor-pointer text-base transition duration-100 ease-in-out;
-    }
+.modal-create-btn {
+    @apply bg-blue-600 text-white py-2 px-4 rounded-md cursor-pointer text-base transition duration-100 ease-in-out;
+}
 
-    .modal-create-btn:hover {
-        @apply bg-blue-700;
-    }
+.modal-create-btn:hover {
+    @apply bg-blue-700;
+}
 
-    .modal-create-btn:active {
-        @apply bg-blue-800 scale-98;
-    }
+.modal-create-btn:active {
+    @apply bg-blue-800 scale-98;
+}
 
-    .cards-box {
-        @apply grid grid-cols-1 gap-4 p-4; /* Basic grid for cards */
-    }
+.cards-box {
+    @apply grid grid-cols-1 gap-4 p-4; /* Basic grid for cards */
+}
 
-    .card-item {
-        @apply relative bg-linear-to-br from-blue-500 to-purple-600 text-white rounded-xl shadow-lg p-6 flex flex-col justify-between h-36; /* Modern card design */
-    }
+.card-item {
+    @apply relative bg-linear-to-br from-blue-500 to-purple-600 text-white rounded-xl shadow-lg p-6 flex flex-col justify-between h-36; /* Modern card design */
+}
 
-    .card-header {
-        @apply flex justify-between items-start;
-    }
+.card-header {
+    @apply flex justify-between items-start;
+}
 
-    .card-type {
-        @apply text-lg font-bold capitalize;
-    }
+.card-type {
+    @apply text-lg font-bold capitalize;
+}
 
-    .card-logo {
-        @apply h-8 w-auto opacity-75; 
-    }
+.card-logo {
+    @apply h-8 w-auto opacity-75;
+}
 
-    .card-number {
-        @apply text-2xl tracking-wider font-mono my-4;
-    }
+.card-number {
+    @apply text-2xl tracking-wider font-mono my-4;
+}
 
-    .card-details {
-        @apply flex justify-between items-center text-sm;
-    }
+.card-details {
+    @apply flex justify-between items-center text-sm;
+}
 
-    .card-balance {
-        @apply font-semibold;
-    }
+.card-balance {
+    @apply font-semibold;
+}
 
-    .card-expiry {
-        @apply text-xs opacity-80;
-    }
+.card-main,
+.card-expiry {
+    @apply text-xs opacity-80;
 }
 
 .dashboard-layout {
@@ -203,7 +202,7 @@
 }
 
 .dashboard-card {
-    @apply bg-white rounded-lg shadow p-6 w-full;
+    @apply bg-white rounded-lg shadow p-6 w-full flex flex-col place-content-between;
 }
 
 .dashboard-section {
@@ -238,8 +237,7 @@
 }
 
 .transfer-recipient-phone-input {
-    @apply 
-        w-full p-4 px-6 bg-white focus:outline-none rounded-full border-2 border-gray-200 shadow-inner
+    @apply w-full p-4 px-6 bg-white focus:outline-none rounded-full border-2 border-gray-200 shadow-inner
         transition-colors duration-200 focus:border-blue-500
         [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none;
 }

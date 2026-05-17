@@ -1,12 +1,12 @@
 <script setup>
 import router from "@/router";
-import { ref, computed } from "vue"; 
+import { ref } from "vue"; 
 
 import axios from "axios";
 
 import ServerErrorComponent from "@/components/ServerErrorComponent.vue";
 import SkeletonComponent from "@/components/SkeletonComponent.vue";
-import DashboardComponent from "@/components/DashboardComponent.vue";
+import Dashboard from "@/components/Dashboard/Dashboard.vue";
 
 import "../assets/bank.css";
 
@@ -15,46 +15,17 @@ const isError = ref(false);
 const user = ref(null);
 const cards = ref(null);
 
-const showCardCreationModal = ref(false);
 const showTransferModal = ref(false);
-const showDepositModal = ref(false);
 const currentView = ref('dashboard');
-
-const inputTimeout = ref(null);
-const transferMatchedPhoneNumbers = ref([]);
-
 const transactionsHistory = ref({});
 
-const newCard = ref({
-    type: "credit",
-    amount: 0,
-    card_number: "",
-    expires_at: "",
-    cvv: ""
-});
-const isPrepaid = computed(() => newCard.value.type === "prepaid");
 const getCardType = (card) => card.card_type.charAt(0).toUpperCase() + card.card_type.slice(1);
-
-const deposit = ref({
-    type: "",
-    amount: 0, 
-    card_id: null
-});
 
 const transfer = ref({
     phone_number: "",
     amount: 0,
     card_id: null 
 });
-
-const openCardCreaionModal = () => {
-    showCardCreationModal.value = true;
-};
-
-const closeCardCreationModal = () => {
-    showCardCreationModal.value = false;
-    newCard.value = { type: "credit", amount: 0, card_number: "", expires_at: "", cvv: "" }; 
-};
 
 const openTransferModal = () => {
     showTransferModal.value = true;
@@ -64,107 +35,6 @@ const closeTransferModal = () => {
     showTransferModal.value = false;
     transfer.value = { phone_number: "", amount: 0, card_id: null };
 };
-
-const openDepositModal = () => {
-    showDepositModal.value = true;
-};
-
-const closeDepositModal = () => {
-    showDepositModal.value = false;
-    deposit.value = { type: "", amount: 0, card_id: null };
-};
-
-const findPhoneNumber = (event) => {
-    clearTimeout(inputTimeout.value);
-    const phoneNumber = event.currentTarget.value;
-
-    if (!/^\d+$/.test(phoneNumber)) {
-        transferMatchedPhoneNumbers.value = [];
-        return;
-    }
-
-    transferMatchedPhoneNumbers.value = transferMatchedPhoneNumbers.value.filter((ph) => ph === phoneNumber);
-
-    inputTimeout.value = setTimeout(async () => {
-        try {
-            const user = (await axios.get("/api/users/", { params: { phone_number: phoneNumber } }))
-                .data.data;
-
-            transferMatchedPhoneNumbers.value.push(user);
-        } catch (err) {
-            if (axios.isAxiosError(err) && err?.response?.data?.message) {
-                transferMatchedPhoneNumbers.value = [];
-            } else {
-                alert("Something went wrong...");
-            }
-        } 
-    }, 300);
-}
-
-const validateCardInfo = () => {
-    if (
-        !["credit", "debit", "overdraft", "prepaid"].includes(newCard.value.type) 
-        || !/^\d{4}\s\d{4}\s\d{4}\s\d{4}$/.test(newCard.value.card_number)
-        || !/^\d\d\/\d\d$/.test(newCard.value.expires_at)
-        || !/^\d{3}$/.test(newCard.value.cvv)
-        || parseInt(newCard.value.expires_at.slice(0, 2)) >= 13
-    ) {
-        return false;
-    }
-
-    return true;
-}
-
-const createCard = async () => {
-    if (!validateCardInfo()) {
-        alert("Invalid card registration field values");
-        return;
-    }
-
-    const data = {
-        "user_id": user.value.id,
-        "card_type": newCard.value.type,
-        "amount": newCard.value.amount,
-        "card_number": newCard.value.card_number,
-        "expires_at": newCard.value.expires_at,
-        "cvv": newCard.value.cvv,
-    };
-    
-    try {
-        await axios.post("/api/bank/cards", {data});
-    } catch (err) {
-        if (axios.isAxiosError(err) && err?.response?.data?.message) {
-            alert(err.response.data.message);
-        } else {
-            alert("Something went wrong...");
-        }
-    }
-    
-    closeCardCreationModal();
-};
-
-const depositMoney = async () => {
-    const data = {
-        "user_id": user.value.id,
-        "type": deposit.value.type,
-        "amount": deposit.value.amount,
-        "card_id": deposit.value.card_id
-    };
-
-    console.log(data);
-
-    try {
-        await axios.post("/api/bank/deposit", {data});
-    } catch (err) {
-        if (axios.isAxiosError(err) && err?.response?.data?.message) {
-            alert(err.response.data.message);
-        } else {
-            alert("Something went wrong...");
-        }
-    }
-
-    closeDepositModal();
-}
 
 const transferMoneyFromDashboard = (data) => {
     transfer.value.phone_number = data.phone_number;
@@ -194,7 +64,6 @@ const transferMoney = async () => {
 
     closeTransferModal();
 }
-
 
 (async () => {
     try {
@@ -261,61 +130,17 @@ const logOutUser = async () => {
             </div>
         </nav>
 
-        <DashboardComponent 
+        <Dashboard 
             :cards="cards"
             :currentView="currentView"
             :transactions="transactionsHistory"
-            :transfer-matched-phone-numbers="transferMatchedPhoneNumbers"
+            :transfer-money="transferMoneyFromDashboard"
             @view-transactions="currentView = 'transactions'"
             @view-dashboard="currentView = 'dashboard'"
             @view-transfer="currentView = 'transfer'"
-            @find-phone-number="findPhoneNumber"
             @open-transfer-modal="openTransferModal"
-            @open-deposit-modal="openDepositModal"
-            @open-card-creation-modal="openCardCreaionModal"
             @transfer-money="transferMoneyFromDashboard"
         />
-
-        <div v-if="showCardCreationModal" class="modal-overlay">
-            <div class="modal-container">
-                <div class="modal-header">
-                    <h2 class="modal-title">Register your card</h2>
-                    <button @click="closeCardCreationModal" class="modal-close-btn">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="card-type">Card Type:</label>
-                        <select id="card-type" v-model="newCard.type" class="modal-select">
-                            <option value="credit">Credit</option>
-                            <option value="debit">Debit</option>
-                            <option value="overdraft">Overdraft</option>
-                            <option value="prepaid">Prepaid</option>
-                        </select>
-                    </div>
-                    <div v-if="isPrepaid" class="form-group">
-                        <label for="card-amount">Initial Amount:</label>
-                        <input type="text" id="card-amount" v-model.number="newCard.amount" class="modal-input" min="0" maxlength="7"/>
-                    </div>
-                    <div class="form-group">
-                        <label for="card-number">Card Number:</label>
-                        <input type="text" id="card-number" v-model="newCard.card_number" class="modal-input" placeholder="1234 5678 9000 0000" maxlength="19"/>
-                    </div>
-                    <div class="form-group-double">
-                        <div class="form-group">
-                            <label for="expires-at">Expiration Date:</label>
-                            <input type="text" id="expires-at" v-model="newCard.expires_at" class="modal-input" placeholder="MM/YY" maxlength="5"/>
-                        </div>
-                        <div class="form-group">
-                            <label for="cvv">CVV:</label>
-                            <input type="text" id="cvv" v-model="newCard.cvv" class="modal-input" placeholder="CVV" maxlength="3">
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button @click="createCard" class="modal-create-btn">Create</button>
-                </div>
-            </div>
-        </div>
 
         <div v-if="showTransferModal" class="modal-overlay">
             <div class="modal-container">
@@ -341,38 +166,6 @@ const logOutUser = async () => {
                 </div>
                 <div class="modal-footer">
                     <button @click="transferMoney" class="btn btn-primary">Proceed Transfer</button>
-                </div>
-            </div>
-        </div>
-
-        <div v-if="showDepositModal" class="modal-overlay">
-            <div class="modal-container">
-                <div class="modal-header">
-                    <h2 class="modal-title">Deposit Money</h2>
-                    <button @click="closeDepositModal" class="modal-close-btn">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label for="deposit-amount">Amount to Deposit:</label>
-                        <input type="number" v-model.number="deposit.amount" id="deposit-amount" class="modal-input" min="0" step="1" placeholder="e.g., 100.00"/>
-                    </div>
-                    <div class="form-group">
-                        <label for="card-deposit">Choose card:</label>
-                        <select v-model.number="deposit.card_id" id="card-deposit" class="modal-select">
-                            <option v-for="(card, index) in cards" :value="`${card.id}`" :key="index">{{ getCardType(card) }} ({{ card.card_number }})</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="deposit-method">Method:</label>
-                        <select v-model="deposit.type" id="deposit-method" class="modal-select">
-                            <option value="transfer">Bank Transfer</option>
-                            <option value="check">Check</option>
-                            <option value="cash">Cash (at ATM)</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button @click="depositMoney" class="btn btn-primary">Confirm Deposit</button>
                 </div>
             </div>
         </div>
