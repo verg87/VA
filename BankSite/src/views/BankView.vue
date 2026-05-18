@@ -131,6 +131,7 @@ const logOutUser = async () => {
         </nav>
 
         <Dashboard 
+            :user="user"
             :cards="cards"
             :currentView="currentView"
             :transactions="transactionsHistory"

@@ -25,6 +25,7 @@ use App\Controllers\CardsController;
 use App\Controllers\DepositController;
 use App\Controllers\TransferController;
 use App\Controllers\TransactionsController;
+use App\Controllers\ChangeMainAccountController;
 
 use App\Controllers\AccessUserController;
 use App\Controllers\AuthController;
@@ -53,6 +54,7 @@ $router->group("/api/bank", function (RouteGroup $router) use ($container) {
 
     $router->post("/deposit", $container->get(DepositController::class));
     $router->post("/transfer", $container->get(TransferController::class));
+    $router->post("/change-main-account", $container->get(ChangeMainAccountController::class));
 })->middleware($container->get(AuthMiddleware::class));
 
 $router->get("/api/users/", $container->get(AccessUserController::class));

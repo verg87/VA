@@ -7,10 +7,14 @@ import CardCreationSection from "./CardCreationSection.vue";
 import BonusesSection from "./BonusesSection.vue";
 import AccountChangerSection from "./AccountChangerSection.vue";
 
+import CardDisplay from "./CardDisplay.vue";
+
+import TransactionsPage from "./TransactionsPage.vue";
 import TransferPage from "./TransferPage.vue";
 import DepositModal from "./DepositModal.vue";
 
 const props = defineProps({
+  user: Object,
   cards: Array,
   currentView: String,
   transactions: Object,
@@ -44,13 +48,6 @@ const closeDepositModal = () => {
   deposit.value = { type: "", amount: 0, card_id: null };
 };
 
-const getAmountColor = (transaction) =>
-  transaction.amount.startsWith("-")
-    ? "text-red-600"
-    : transaction.amount.startsWith("+")
-      ? "text-green-600"
-      : "";
-
 const hasMainCard = computed(() => {
   return (
     props.cards !== null &&
@@ -58,48 +55,8 @@ const hasMainCard = computed(() => {
   );
 });
 
-const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  let formatted =
-    date.toLocaleString("en", { month: "long" }) + " " + date.getDate();
-
-  if (date.getFullYear() < new Date().getFullYear()) {
-    formatted += ` ${date.getFullYear()}`;
-  }
-
-  return formatted;
-};
-
-const byDateTime = (transactions) => {
-  if (!transactions) {
-    return {};
-  }
-
-  const sortedEntries = Object.entries(transactions).sort(
-    ([dateA], [dateB]) => {
-      return new Date(dateB) - new Date(dateA);
-    },
-  );
-
-  return sortedEntries.reduce((acc, [date, transactionList]) => {
-    const sortedTransactions = [...transactionList].sort((a, b) => {
-      const dateTimeA = new Date(`${date} ${a.time}`);
-      const dateTimeB = new Date(`${date} ${b.time}`);
-      return dateTimeB - dateTimeA;
-    });
-
-    acc[date] = sortedTransactions;
-    return acc;
-  }, {});
-};
-
 const getCardType = (card) =>
   card.card_type.charAt(0).toUpperCase() + card.card_type.slice(1);
-
-const getCardBalance = (card) =>
-  `${card.amount}`.startsWith("-")
-    ? `-$${card.amount.toString().slice(1)}`
-    : `$${card.amount}`;
 
 const depositMoney = async () => {
   const data = {
@@ -196,46 +153,15 @@ const depositMoney = async () => {
         <div class="dashboard-section">
           <CardCreationSection></CardCreationSection>
           <BonusesSection @open-deposit-modal="openDepositModal"></BonusesSection>
-          <AccountChangerSection :cards="props.cards" :getCardType="getCardType"></AccountChangerSection>
+          <AccountChangerSection :user="props.user" :cards="props.cards" :getCardType="getCardType"></AccountChangerSection>
         </div>
-        <div class="dashboard-card col-span-1 lg:col-span-2">
-          <h2 class="card-title">Your Cards</h2>
-          <div class="cards-box">
-            <div v-for="(card, index) in cards" :key="index" class="card-item">
-              <div class="card-header">
-                <h3 class="card-type">{{ card.card_type }}</h3>
-                <h4 class="card-main">{{ card.is_main ? "Main" : "" }}</h4>
-              </div>
-              <div class="card-number">{{ card.card_number }}</div>
-              <div class="card-details">
-                <div class="card-balance">
-                  Balance: {{ getCardBalance(card) }}
-                </div>
-                <div class="card-expiry">Expires: {{ card.expires_at }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <CardDisplay :cards="props.cards"/>
       </div>
 
-      <div v-else-if="props.currentView === 'transactions'" class="dashboard-transactions">
-        <div v-for="(transactionsForDate, date) in byDateTime(transactions)" :key="date" class="w-full">
-          <p class="text-2xl font-bold mb-4">{{ formatDate(date) }}</p>
-          <div v-for="(transaction, index) in transactionsForDate" :key="index"
-            class="flex w-full h-fit bg-white p-4 justify-between rounded-2xl shadow-md mb-6">
-            <div class="flex flex-col gap-2">
-              <p class="text-xl font-semibold">{{ transaction.name }}</p>
-              <p class="text-gray-600 italic">{{ transaction.type }}</p>
-            </div>
-            <div class="flex flex-col gap-2 text-right">
-              <p class="text-xl font-semibold" :class="getAmountColor(transaction)">
-                {{ transaction.amount }}
-              </p>
-              <p class="text-gray-600 italic">{{ transaction.card_type }}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      <TransactionsPage
+        v-else-if="props.currentView === 'transactions'"
+        :transactions="props.transactions"
+      />
 
       <TransferPage 
         v-else-if="props.currentView === 'transfer' && hasMainCard"

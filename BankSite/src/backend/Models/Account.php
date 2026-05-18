@@ -66,4 +66,21 @@ class Account extends Model
             return false;
         }
     }
+
+    public function update(int $userId, int $newCardId): bool
+    {
+        try {
+            v::intType()->positive()->assert($userId);
+            v::intType()->positive()->assert($newCardId);
+
+            $stmt = $this->db->prepare(
+                "UPDATE accounts SET card_id = :ci WHERE user_id = :ui"
+            );
+
+            return $stmt->execute([":ci" => $newCardId, ":ui" => $userId]);
+        } catch (Exception $e) {
+            var_dump($e->getMessage());
+            return false;
+        }
+    }
 }

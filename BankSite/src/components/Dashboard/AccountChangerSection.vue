@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import axios from "axios";
 
 const props = defineProps({
+    user: Object,
     cards: Array,
     getCardType: Function,
 });
@@ -19,8 +20,25 @@ const close = () => {
     isOpened.value = false;
 }
 
-const change = async () => {
+const filterCards = (cards) => {
+    return cards.filter((card) => ["debit", "credit"].includes(card.card_type) && !card.is_main );
+}
 
+const change = async () => {
+    const data = {
+        "user_id": props.user.id,
+        "card_id": cardId.value
+    };
+
+    try {
+        await axios.post("/api/bank/change-main-account", {data});
+    } catch (err) {
+        if (axios.isAxiosError(err) && err?.response?.data?.message) {
+            alert(err.response.data.message);
+        } else {
+            alert("Something went wrong...");
+        }
+    }
 }
 </script>
 
@@ -42,12 +60,12 @@ const change = async () => {
                 <div class="form-group">
                     <label for="main-card">Choose card:</label>
                     <select v-model.number="cardId" id="main-card" class="modal-select">
-                        <option v-for="(card, index) in props.cards" :value="`${card.id}`" :key="index">{{ props.getCardType(card) }} ({{ card.card_number }})</option>
+                        <option v-for="(card, index) in filterCards(props.cards)" :value="`${card.id}`" :key="index">{{ props.getCardType(card) }} ({{ card.card_number }})</option>
                     </select>
                 </div>
             </div>
             <div class="modal-footer">
-                <button @click="change" class="modal-create-btn">Create</button>
+                <button @click="change" class="modal-create-btn">Change</button>
             </div>
         </div>
     </div>
