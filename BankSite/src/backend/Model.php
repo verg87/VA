@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace App;
 
 use Exception;
-use InvalidArgumentException;
+use Throwable;
+
+use App\Helpers\LoggerTrait;
 
 abstract class Model
 {
+    use LoggerTrait;
+
     protected DB $db;
 
     public function __construct(DB $db)
@@ -46,17 +50,13 @@ abstract class Model
         return $res;
     }
 
-    /**
-     * @throws InvalidArgumentException When method failes to validate passed ID
-     */
-    protected function validateId(int $id): int
+    protected function tryAndLog(callable $fn): array|bool
     {
-        $validatedId = filter_var($id, FILTER_VALIDATE_INT);
-
-        if ($validatedId === false) {
-            throw new InvalidArgumentException("Passed ID is not an integer");
+        try {
+            return $fn();
+        } catch (Throwable $e) {
+            $this->log($e, "MODEL", "**Model error**", "**Model error**");
+            return false;
         }
-        
-        return $validatedId;
     }
 }

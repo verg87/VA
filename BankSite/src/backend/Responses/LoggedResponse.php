@@ -13,6 +13,6 @@ class LoggedResponse extends Responses\InternalServerErrorResponse
 
     public function __construct(private Throwable $exception, private ServerRequestInterface $request)
     {
-        $this->log($exception, "APP", $request->getMethod(), (string) $request->getUri());
+        $this->log($exception, "CONTROLLER", $request->getMethod(), (string) $request->getUri());
     }
 }

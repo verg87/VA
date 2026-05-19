@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
-
 use Respect\Validation\ValidatorBuilder as v;
 
 use App\DB;
 use App\Model;
-
-use Exception;
 
 class User extends Model
 {
@@ -31,7 +27,7 @@ class User extends Model
 
     public function create(string $firstName, string $lastName, string $email, string $phoneNumber, string $password): bool
     {
-        try {
+        $fn = function() use($firstName, $lastName, $email, $phoneNumber, $password) {
             $this->validate($firstName, $lastName, $email, $phoneNumber);
 
             $pwdHash = password_hash($password, PASSWORD_DEFAULT);
@@ -47,10 +43,9 @@ class User extends Model
                 ":pn" => $phoneNumber,
                 ":pw" => $pwdHash,
             ]);
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function getAll(): array
@@ -68,7 +63,7 @@ class User extends Model
 
     public function getById(int $userId): array|bool
     {
-        try {
+        $fn = function() use($userId) {
             v::intType()->positive()->assert($userId);
 
             $stmt = $this->db->prepare(
@@ -82,16 +77,19 @@ class User extends Model
             unset($user["password"]);
 
             return $user;
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function getByIds(array $ids): array|bool
     {
-        try {
-            v::notBlank()->allIntType()->allPositive()->assert($ids);
+        if (empty($ids)) {
+            return false;
+        }
+
+        $fn = function() use($ids) {
+            v::allIntType()->allPositive()->assert($ids);
 
             $placeholders = implode(', ', array_fill(0, count($ids), '?'));
             $stmt = $this->db->prepare("SELECT id, first_name, last_name FROM users WHERE id IN ($placeholders)");
@@ -102,15 +100,14 @@ class User extends Model
 
             $stmt->execute();
             return $stmt->fetchAll();
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function getByPhone(string $phoneNumber): array|bool
     {
-        try {
+        $fn = function() use($phoneNumber) {
             v::phone()->assert("+" . $phoneNumber);
 
             $stmt = $this->db->prepare(
@@ -121,15 +118,14 @@ class User extends Model
 
             $stmt->execute();
             return $stmt->fetch();
-        } catch (Exception $e) {
-            // var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function getByPhoneAndPWD(string $phoneNumber, string $password): array|bool
     {
-        try {
+        $fn = function() use($phoneNumber, $password) {
             v::phone()->assert("+" . $phoneNumber);
 
             $stmt = $this->db->prepare(
@@ -147,15 +143,14 @@ class User extends Model
             unset($user["password"]);
 
             return $valid ? $user : [];
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function rehashPwd(string $phoneNumber, string $password): bool
     {
-        try {
+        $fn = function() use($phoneNumber, $password) {
             v::phone()->assert("+" . $phoneNumber);
 
             $stmt = $this->db->prepare(
@@ -186,9 +181,8 @@ class User extends Model
             }
 
             return false;
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 }

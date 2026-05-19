@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-require_once __DIR__ . "/../../../vendor/autoload.php";
-
 use Respect\Validation\ValidatorBuilder as v;
 
 use App\DB;
@@ -38,7 +36,7 @@ class Transaction extends Model
 
     public function create(int $userId, int $receiverUserId, int $receiverCardId, string $depositType, float $amount, int|null $cardId = null): bool
     {
-        try {
+        $fn = function() use($userId, $receiverUserId, $receiverCardId, $depositType, $amount, $cardId) {
             $this->validate($userId, $receiverUserId, $receiverCardId, $depositType, $amount, $cardId);
 
             $stmt = $this->db->prepare(
@@ -53,16 +51,14 @@ class Transaction extends Model
                 ":ty" => $depositType,
                 ":am" => $amount,
             ]);
-        } catch (Exception $e) {
-            // maybe log it
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function getAllByUserId(int $userId): array|bool
     {
-        try {
+        $fn = function() use($userId) {
             v::intType()->positive()->assert($userId);
 
             $stmt = $this->db->prepare(
@@ -71,9 +67,8 @@ class Transaction extends Model
 
             $stmt->execute([":ui" => $userId, ":rui" => $userId]);
             return $stmt->fetchAll();
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 }

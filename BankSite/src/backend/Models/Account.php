@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-require_once __DIR__ . "/../../../vendor/autoload.php";
-
 use Respect\Validation\ValidatorBuilder as v;
 
 use App\DB;
@@ -32,7 +30,7 @@ class Account extends Model
 
     public function create(int $userId, int $cardId): bool
     {
-        try {
+        $fn = function() use ($userId, $cardId) {
             $this->validate($userId, $cardId);
 
             $stmt = $this->db->prepare(
@@ -43,16 +41,14 @@ class Account extends Model
                 ":ui" => $userId,
                 ":ci" => $cardId
             ]);
-        } catch (Exception $e) {
-            // maybe log it
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function getByUserId(int $userId): array|bool
     {
-        try {
+        $fn = function() use ($userId) {
             v::intType()->positive()->assert($userId);
 
             $stmt = $this->db->prepare(
@@ -61,15 +57,14 @@ class Account extends Model
 
             $stmt->execute([":ui" => $userId]);
             return $stmt->fetch();
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function update(int $userId, int $newCardId): bool
     {
-        try {
+        $fn = function() use ($userId, $newCardId) {
             v::intType()->positive()->assert($userId);
             v::intType()->positive()->assert($newCardId);
 
@@ -78,9 +73,8 @@ class Account extends Model
             );
 
             return $stmt->execute([":ci" => $newCardId, ":ui" => $userId]);
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 }

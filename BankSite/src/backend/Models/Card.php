@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-require_once __DIR__ . "/../../../vendor/autoload.php";
-
 use Respect\Validation\ValidatorBuilder as v;
 
 use App\DB;
@@ -61,7 +59,7 @@ class Card extends Model
 
     public function create(int $userId, string $cardNumber, string $cardType, float $amount = 0, string $expiresAt, string $cvv): bool
     {
-        try {
+        $fn = function() use($userId, $cardNumber, $cardType, $amount, $expiresAt, $cvv) {
             $this->validate($userId, $cardNumber, $cardType, $amount, $expiresAt, $cvv);
             $expiresAt = $this->prepareExpirationTime($expiresAt);
 
@@ -94,11 +92,9 @@ class Card extends Model
                 ":ea" => $expiresAt,
                 ":cv" => $encryptedCVV
             ]);
-        } catch (Exception $e) {
-            // maybe log it
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function getLatestId(): int
@@ -108,18 +104,26 @@ class Card extends Model
 
     private function validateTransfer(array $sender, array $receiver, float $amount): void 
     {
-        v::anyOf(
-            v::allOf(
-                v::equals("debit")->assert($sender["card_type"]), 
-                v::greaterThanOrEqual(0)->floatVal()->assert($sender["amount"] - $amount)
-            ),
-            v::allOf(
-                v::equals("credit")->assert($sender["card_type"]),
-                v::greaterThanOrEqual(-10000)->floatVal()->assert($sender["amount"] - $amount)
-            ),
-            v::stringType()->notEquals("prepaid")->assert($receiver["card_type"]),
-            v::floatType()->positive()->lessThanOrEqual(1000000)->assert($amount)
+        $data = ["type" => $sender["card_type"], "toTransfer" => $amount, "left" => $sender["amount"] - $amount];
+
+        $debitRule = v::allOf(
+            v::key("type", v::equals("debit")),
+            v::key("left", v::floatType()->greaterThanOrEqual(0)),
+            v::key("toTransfer", v::floatType()->positive()->lessThanOrEqual(1000000))
         );
+
+        $creditRule = v::allOf(
+            v::key("type", v::equals("credit")),
+            v::key("left", v::floatType()->greaterThanOrEqual(-10000)),
+            v::key("toTransfer", v::floatType()->positive()->lessThanOrEqual(1000000))
+        );
+
+        $etcRule = v::allOf(
+            v::key("type", v::stringType()->notEquals("prepaid")),
+            v::key("toTransfer", v::floatType()->positive()->lessThanOrEqual(1000000))
+        );
+
+        v::anyOf($debitRule, $creditRule, $etcRule)->assert($data);
     }
 
     private function updateAmount(array $card, float $amount): bool
@@ -140,7 +144,7 @@ class Card extends Model
 
     public function transfer(int $senderCardId, int $receiverCardId, int $amount): bool
     {
-        try {
+        $fn = function() use($senderCardId, $receiverCardId, $amount) {
             $senderCard = $this->getById($senderCardId);
             $receiverCard = $this->getById($receiverCardId);
 
@@ -157,10 +161,9 @@ class Card extends Model
             }
 
             return true;
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+        
+        return $this->tryAndLog($fn);
     }
 
     private function validateDeposit(array $receiver, float $amount): void
@@ -171,16 +174,15 @@ class Card extends Model
 
     public function deposit(int $receiverCardId, float $amount): bool
     {
-        try {
+        $fn = function() use($receiverCardId, $amount) {
             $receiverCard = $this->getById($receiverCardId);
 
             $this->validateDeposit($receiverCard, $amount);
 
             return $this->updateAmount($receiverCard, $receiverCard["amount"] + $amount);
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+        
+        return $this->tryAndLog($fn);
     }
 
     private function formatCardData(array $cardInfo): array|bool
@@ -208,7 +210,7 @@ class Card extends Model
 
     public function getById(int $id): array|bool
     {
-        try {
+        $fn = function() use($id) {
             v::intType()->positive()->assert($id);
 
             $stmt = $this->db->prepare(
@@ -219,16 +221,14 @@ class Card extends Model
             $stmt->execute();
 
             return $stmt->fetch();
-        } catch (Exception $e) {
-            // maybe log it
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function getByIds(array $ids): array|bool
     {
-        try {
+        $fn = function() use($ids) {
             v::notBlank()->allIntType()->allPositive()->assert($ids);
 
             $placeholders = implode(', ', array_fill(0, count($ids), '?'));
@@ -240,15 +240,14 @@ class Card extends Model
 
             $stmt->execute();
             return $stmt->fetchAll();
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function getByUserId(int $userId): array|bool
     {
-        try {
+        $fn = function() use($userId) {
             v::intType()->positive()->assert($userId);
 
             $stmt = $this->db->prepare(
@@ -268,11 +267,9 @@ class Card extends Model
             return Functions::array_all($formattedCards, fn($card) => gettype($card) === "array") 
                 ? $formattedCards 
                 : false;
-        } catch (\Throwable $e) {
-            // maybe log it
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function getLatestCardId(): int
@@ -293,7 +290,7 @@ class Card extends Model
 
     public function updateSecretKey(int $id, string $newSecretKey): bool
     {
-        try {
+        $fn = function() use ($id, $newSecretKey) {
             v::intType()->positive()->assert($id);
 
             $stmt = $this->db->prepare(
@@ -304,11 +301,9 @@ class Card extends Model
             $stmt->bindParam(":id", $id);
 
             return $stmt->execute();
-        } catch (Exception $e) {
-            // maybe log it
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function updateSecretKeys(array $secretKeys): bool

@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-require_once __DIR__ . "\\..\\..\\..\\vendor\\autoload.php";
-
 use Respect\Validation\ValidatorBuilder as v;
 
 use App\DB;
 use App\Model;
 
 use App\Vault\Vault;
-use Exception;
 
 class RefreshSession extends Model
 {
@@ -39,7 +36,7 @@ class RefreshSession extends Model
         string $ipAddress,
         int $expiresAt
     ): bool {
-        try {
+        $fn = function() use($userId, $jti, $userAgent, $ipAddress, $expiresAt) {
             $this->validate($userId, $ipAddress, $expiresAt);
 
             $stmt = $this->db->prepare(
@@ -58,15 +55,14 @@ class RefreshSession extends Model
                 ":ia" => $hashedIpAddress,
                 ":ea" => $expiresAt,
             ]);
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function deleteByJTIS(array $jtis): array
     {
-        try {
+        $fn = function() use($jtis) {
             v::notBlank()->allStringType()->assert($jtis);
 
             $placeholders = implode(', ', array_fill(0, count($jtis), '?'));
@@ -80,10 +76,9 @@ class RefreshSession extends Model
             $numOfDeleted = $stmt->rowCount();
 
             return ["status" => $status ? "success" : "failure", "deleted" => $numOfDeleted];
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return ["status" => "success", "deleted" => 0];
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function getAll(): array|bool
@@ -96,7 +91,7 @@ class RefreshSession extends Model
 
     public function get(string $jti): array|bool
     {
-        try {
+        $fn = function() use($jti) {
             v::stringType()->notBlank()->assert($jti);
 
             $stmt = $this->db->prepare("SELECT * FROM refresh_sessions WHERE jti = :jti");
@@ -107,30 +102,28 @@ class RefreshSession extends Model
 
             $stmt->execute();
             return $stmt->fetch();
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function deleteByUserId(int $userId): bool
     {
-        try {
+        $fn = function() use($userId) {
             v::intType()->positive()->assert($userId);
 
             $stmt = $this->db->prepare("DELETE FROM refresh_sessions WHERE user_id = :ui");
             $stmt->bindParam(":ui", $userId);
 
             return $stmt->execute();
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 
     public function update(string $jti): bool
     {
-        try {
+        $fn = function() use($jti) {
             v::stringType()->notBlank()->assert($jti);
 
             $stmt = $this->db->prepare("UPDATE refresh_sessions SET is_revoked = 1 WHERE jti = :ji");
@@ -141,9 +134,8 @@ class RefreshSession extends Model
 
             $stmt->execute();
             return $stmt->rowCount() > 0;
-        } catch (Exception $e) {
-            var_dump($e->getMessage());
-            return false;
-        }
+        };
+
+        return $this->tryAndLog($fn);
     }
 }
