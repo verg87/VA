@@ -1,13 +1,16 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace App;
 
 use PDO;
 
+use App\Helpers\LoggerTrait;
+
 class DB
 {
+    use LoggerTrait;
     private static array $instances = [];
 
     final private function __construct(private PDO $pdo, public string $name) {}
@@ -56,9 +59,8 @@ class DB
         try {
             return call_user_func_array([$this->pdo, $name], $arguments);
         } catch (\PDOException $e) {
-            // log it somewhere
-            var_dump($e->getMessage());
-            throw $e; 
+            $this->log($e, "DATABASE", $name, str_replace(["\r", "\n", "\t"], " ", print_r($arguments, true)));
+            throw $e;
         }
     }
 

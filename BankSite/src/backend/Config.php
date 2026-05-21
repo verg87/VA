@@ -15,7 +15,7 @@ class Config
                 "host"     => $env["DB_HOST"],
                 "user"     => $env["DB_USER"],
                 "pass"     => $env["DB_PASSWORD"],
-                "driver"   => $env["DB_DRIVER"] ?? "mysql",
+                "driver"   => $env["DB_DRIVER"] ?? "pdo_mysql",
                 "database" => $env["DB_NAME"],
             ],
             "vault" => [

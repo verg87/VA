@@ -120,6 +120,7 @@ class Card extends Model
 
         $etcRule = v::allOf(
             v::key("type", v::stringType()->notEquals("prepaid")),
+            v::key("left", v::floatType()->greaterThanOrEqual(0)),
             v::key("toTransfer", v::floatType()->positive()->lessThanOrEqual(1000000))
         );
 

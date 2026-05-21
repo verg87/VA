@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 .all-page {
-    @apply size-full;
+    @apply size-full h-screen;
 }
 
 .logout-btn {

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from "vue";
+import axios from "axios";
 
 import TransferHelperWindow from "./TransferHelperWindow.vue";
 
@@ -60,7 +61,7 @@ const getCardType = (card) =>
 
 const depositMoney = async () => {
   const data = {
-    "user_id": user.value.id,
+    "user_id": props.user.id,
     "type": deposit.value.type,
     "amount": deposit.value.amount,
     "card_id": deposit.value.card_id

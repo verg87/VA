@@ -94,7 +94,7 @@ npm run dev
 
 ## Logging
 
-This project has a logging worker service that logs every error on the backend, as well as daily routines like clearing a database from expired or unwanted data. To see the log files, you need to run the website first, which will create a `logs` folder. All log files will be generated in the `src/backend/log` folder.
+This project has a logging worker that logs every error on the backend, as well as daily routines like clearing a database from expired or unwanted data. To see the log files, you need to run the website first, it will create a `log` folder. All of the log files will be generated in the `src/backend/log` folder.
 
 ## Security Features
 
