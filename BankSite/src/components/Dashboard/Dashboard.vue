@@ -87,7 +87,7 @@ const depositMoney = async () => {
   <div class="dashboard-layout">
     <aside class="dashboard-sidebar">
       <div class="sidebar-header">
-        <h2 class="sidebar-logo">Bank Inc.</h2>
+        <h2 class="sidebar-logo">Your-Bank</h2>
       </div>
       <nav class="sidebar-nav">
         <a href="#" class="sidebar-link" :class="{

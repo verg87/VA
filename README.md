@@ -6,7 +6,7 @@ This repository contains a collection of standalone web applications built with 
 
 ### 1. Bank Site
 
-A well secured banking site that allows users to create credit cards, depit cards, deposit, withdraw and loan.
+A well secured banking site that allows users to create credit cards, depit cards, deposit and transfer.
 
 - **Features:** Authentication, Authorization, JWT tokens, Envelope Encryption, Fingerprint use.
 - **Technologies:** Vue, JavaScript, PHP, MySQL, Tailwind CSS, HashiCorp Vault

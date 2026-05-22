@@ -124,7 +124,7 @@ class Card extends Model
             v::key("toTransfer", v::floatType()->positive()->lessThanOrEqual(1000000))
         );
 
-        v::anyOf($debitRule, $creditRule, $etcRule)->assert($data);
+        v::anyOf($etcRule, $debitRule, $creditRule)->assert($data);
     }
 
     private function updateAmount(array $card, float $amount): bool
@@ -143,7 +143,7 @@ class Card extends Model
         return $status && $numOfRowUpdated === 1;
     }
 
-    public function transfer(int $senderCardId, int $receiverCardId, int $amount): bool
+    public function transfer(int $senderCardId, int $receiverCardId, float $amount): bool
     {
         $fn = function() use($senderCardId, $receiverCardId, $amount) {
             $senderCard = $this->getById($senderCardId);

@@ -1,6 +1,6 @@
 # BankSite
 
-A banking website with features for depositing, withdrawing, and card-to-card transactions. This project provides a full-stack banking application, with a Vue.js frontend and a PHP backend. It is designed to showcase best practices in web security, including the use of [Vault](https://www.vaultproject.io/) for secrets management.
+A banking website with features for depositing, transfering and card-to-card transactions. This project provides a full-stack banking application, with a Vue.js frontend and a PHP backend. It is designed to showcase best practices in web security, including the use of [Vault](https://www.vaultproject.io/) for secrets management.
 
 ## Prerequisites
 
@@ -114,6 +114,15 @@ This approach enhances scalability and overall security by removing the exposure
 
 To protect sensitive data, such as credit card information, this application is using **Envelope Encryption**. This method involves encrypting data with a unique data encryption key (DEK), which is then itself encrypted by a key encryption key (KEK). KEK is usually stored on a secure key management service (KMS) or, in case of this project, in HashiCorp Vault. This encryption approach ensures that even if encrypted data and DEK is compromised, it remains unreadable without access to KEK.
 
+## Application Preview
+
+### Homepage
+
+![Bank Site Homepage](docs/img/1.png) 
+
+### Bank
+
+![Bank Site Page](docs/img/2.png)
 
 ## Compile and Minify for Production
 

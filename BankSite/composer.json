@@ -13,8 +13,7 @@
         "sokil/php-isocodes": "^4.4",
         "sokil/php-isocodes-db-only": "^4.0",
         "giggsey/libphonenumber-for-php-lite": "^9.0",
-        "php-di/php-di": "^7.1",
-        "doctrine/dbal": "^4.4"
+        "php-di/php-di": "^7.1"
     },
     "autoload": {
         "psr-4": {
