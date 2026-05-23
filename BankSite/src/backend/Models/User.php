@@ -22,7 +22,7 @@ class User extends Model
         v::alpha()->assert($lastName);
 
         v::email()->assert($email);
-        v::phone()->assert("+" . $phoneNumber);
+        v::phone()->assert(str_starts_with($phoneNumber, "+") ? $phoneNumber : "+" . $phoneNumber);
     }
 
     public function create(string $firstName, string $lastName, string $email, string $phoneNumber, string $password): bool
