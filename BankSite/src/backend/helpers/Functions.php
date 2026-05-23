@@ -19,4 +19,9 @@ class Functions
     {
         return $array ? $array[array_key_last($array)] : null;
     }
+
+    static function array_first(array $array): mixed 
+    {
+        return $array ? $array[array_key_first($array)] : null;
+    }
 }

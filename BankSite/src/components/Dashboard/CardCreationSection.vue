@@ -2,6 +2,10 @@
 import { ref, computed } from 'vue';
 import axios from "axios";
 
+const props = defineProps({
+    user: Object 
+});
+
 const isOpen = ref(false);
 const newCard = ref({
     type: "credit",
@@ -42,7 +46,7 @@ const create = async () => {
     }
 
     const data = {
-        "user_id": user.value.id,
+        "user_id": props.user.id,
         "card_type": newCard.value.type,
         "amount": newCard.value.amount,
         "card_number": newCard.value.card_number,

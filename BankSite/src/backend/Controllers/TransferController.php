@@ -58,7 +58,7 @@ class TransferController extends Controller
             ) = $data;
 
             try {
-                $status = $this->card->safeTransaction();
+                $status = $this->card->beginTransaction();
 
                 if (!$status) {
                     throw new Exception("Can not begin transaction. Returning server error response");

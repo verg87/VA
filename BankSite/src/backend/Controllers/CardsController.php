@@ -115,7 +115,12 @@ class CardsController extends Controller
                         return ResponseFactory::create(500)(message: "Failed to register a card");
                     }
 
-                    return ResponseFactory::create(201)(message: "Successfully created banking card");
+                    if ($this->card->commit()) {
+                        return ResponseFactory::create(201)(message: "Successfully created banking card");
+                    }
+
+                    $this->card->rollBack();
+                    return ResponseFactory::create(500)(message: "Failed to register a card");
                 }
 
                 $this->card->rollBack();

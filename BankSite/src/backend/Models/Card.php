@@ -15,7 +15,6 @@ use App\Helpers\CardTypes;
 use DateTimeImmutable;
 use Exception;
 use InvalidArgumentException;
-use PDOException;
 
 class Card extends Model
 {
@@ -34,9 +33,9 @@ class Card extends Model
     {
         v::intType()->positive()->assert($userId);
         
-        if ($cardType === CardTypes::Credit->value) {
-            v::creditCard()->assert($cardNumber);
-        }
+        // if ($cardType === CardTypes::Credit->value) {
+        //     v::creditCard()->assert($cardNumber);
+        // }
 
         if (!preg_match("/^\d{4} \d{4} \d{4} \d{4}$/", $cardNumber)) {
             throw new InvalidArgumentException("Invalid card number format");
@@ -230,7 +229,11 @@ class Card extends Model
     public function getByIds(array $ids): array|bool
     {
         $fn = function() use($ids) {
-            v::notBlank()->allIntType()->allPositive()->assert($ids);
+            if (empty($ids)) {
+                return false;
+            }
+
+            v::allIntType()->allPositive()->assert($ids);
 
             $placeholders = implode(', ', array_fill(0, count($ids), '?'));
             $stmt = $this->db->prepare("SELECT id, user_id, card_type FROM cards WHERE id IN ($placeholders)");
@@ -333,17 +336,6 @@ class Card extends Model
 
     public function beginTransaction(): bool
     {
-        return $this->db->beginTransaction();
-    }
-
-    public function safeTransaction(): bool
-    {
-        try {
-            return $this->db->beginTransaction();
-        } catch (PDOException $e) {
-            $this->db->rollBack();
-        }
-
         return $this->db->beginTransaction();
     }
 }

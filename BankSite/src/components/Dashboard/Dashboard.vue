@@ -67,8 +67,6 @@ const depositMoney = async () => {
     "card_id": deposit.value.card_id
   };
 
-  console.log(data);
-
   try {
     await axios.post("/api/bank/deposit", { data });
   } catch (err) {
@@ -152,7 +150,7 @@ const depositMoney = async () => {
 
       <div v-if="props.currentView === 'dashboard'" class="dashboard-grid">
         <div class="dashboard-section">
-          <CardCreationSection></CardCreationSection>
+          <CardCreationSection :user="props.user"></CardCreationSection>
           <BonusesSection @open-deposit-modal="openDepositModal"></BonusesSection>
           <AccountChangerSection :user="props.user" :cards="props.cards" :getCardType="getCardType"></AccountChangerSection>
         </div>

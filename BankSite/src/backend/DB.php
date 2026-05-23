@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App;
 
 use PDO;
+use PDOException;
 
 use App\Helpers\LoggerTrait;
 
@@ -31,8 +32,8 @@ class DB
                 $dbConfig['pass'],
                 $dbConfig['options'] ?? $defaultOptions
             );
-        } catch (\PDOException $e) {
-            throw new \PDOException($e->getMessage(), (int) $e->getCode());
+        } catch (PDOException $e) {
+            throw new PDOException($e->getMessage(), (int) $e->getCode());
         }
     }
 
@@ -58,7 +59,7 @@ class DB
     {
         try {
             return call_user_func_array([$this->pdo, $name], $arguments);
-        } catch (\PDOException $e) {
+        } catch (PDOException $e) {
             $this->log($e, "DATABASE", $name, str_replace(["\r", "\n", "\t"], " ", print_r($arguments, true)));
             throw $e;
         }
@@ -69,7 +70,7 @@ class DB
         try {
             static::$instances[$name]->query('SELECT 1');
             return true;
-        } catch (\PDOException $e) {
+        } catch (PDOException $e) {
             return false;
         }
     }
@@ -79,5 +80,16 @@ class DB
         $name = $config["db"]["database"];
 
         static::$instances[$name] = static::createPDO($config); 
+    }
+
+    public function beginTransaction(): bool
+    {
+        try {
+            return $this->pdo->beginTransaction();
+        } catch (PDOException $e) {
+            $this->pdo->rollBack();
+        }
+
+        return $this->pdo->beginTransaction();
     }
 }

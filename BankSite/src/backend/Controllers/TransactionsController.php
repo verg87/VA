@@ -12,6 +12,7 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Models\Card;
 use App\Controller;
+use App\Helpers\Functions;
 use App\Responses\ResponseFactory;
 
 class TransactionsController extends Controller
@@ -47,8 +48,11 @@ class TransactionsController extends Controller
 
                 return ResponseFactory::create(404)();
             } catch (Exception $e) {
-                var_dump($e->getMessage());
-                return ResponseFactory::create(500)(message: "Failed to parse transactions");
+                if ($e->getMessage() !== "No transactions to parse") {
+                    throw $e;
+                }
+                
+                return ResponseFactory::create(404)();
             }
         }
 
@@ -113,13 +117,17 @@ class TransactionsController extends Controller
             } else if ($tr["user_id"] === $userId && $tr["receiver_user_id"] !== $userId) {
                 $receiver = array_filter($receivers, function($user) use ($tr) {
                     return $user["id"] === $tr["receiver_user_id"];
-                })[0];
+                });
+                
+                $receiver = Functions::array_first($receiver);
 
                 $name = $receiver["first_name"] . " " . $receiver["last_name"];
             } else {
                 $sender = array_filter($senders, function($user) use ($tr) {
                     return $user["id"] === $tr["user_id"];
-                })[0];
+                });
+
+                $sender = Functions::array_first($sender);
 
                 $name = $sender["first_name"] . " " . $sender["last_name"];
             }
