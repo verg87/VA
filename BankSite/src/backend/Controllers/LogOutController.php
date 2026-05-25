@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Models\RefreshSession;
+use Exception;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -15,6 +16,7 @@ use App\Controller;
 use App\Vault\Vault;
 use App\Helpers\CookieManager;
 use App\Responses\ResponseFactory;
+use App\Responses\LoggedResponse;
 
 class LogOutController extends Controller
 {
@@ -44,7 +46,8 @@ class LogOutController extends Controller
         }
 
         if (!$this->refreshSession->update($payload["jti"])) {
-            return ResponseFactory::create(500)();
+            $e = new Exception("There is no such jti as " . $payload["jti"] . ". Perhaps it is an old jti that have been deleted");
+            return (new LoggedResponse($e, $request))();
         }
 
         $cookie = CookieManager::withInfo($payload["sub"], $userAgent, $ipAddress);

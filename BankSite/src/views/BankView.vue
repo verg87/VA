@@ -91,9 +91,7 @@ const transferMoney = async () => {
         const data = {"user_id": user.value.id};
 
         cards.value = (await axios.get("/api/bank/cards", {params: data})).data.data;
-        console.log(cards.value);
         transactionsHistory.value = (await axios.get("/api/bank/transactions", {params: data})).data.data;
-        
     } catch (err) {
     }
 })();

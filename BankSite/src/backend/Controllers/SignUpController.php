@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Helpers\Functions;
 use App\Helpers\CookieManager;
 use App\Responses\ResponseFactory;
+use App\Responses\LoggedResponse;
 
 class SignUpController extends Controller
 {
@@ -60,10 +61,7 @@ class SignUpController extends Controller
                   
                     return ResponseFactory::create(400)(message: "A user with such credentials already exists");
                 }
-                // Maybe log it to some file
-                var_dump($e->getMessage());
-
-                return ResponseFactory::create(500)(message: "Failed to save");
+                return (new LoggedResponse($e, $request))(message: "Failed to save");
             } 
                     
             return ResponseFactory::create(400)(message: "Invalid data");

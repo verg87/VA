@@ -21,6 +21,13 @@ abstract class Controller
         return new Response(200);
     }
 
+    protected function validateBankRequest(array $data, array $attr): bool
+    {
+        return 
+            isset($attr["user"]) && gettype($attr["user"]) === "array" &&
+            $attr["user"]["id"] === (int) ($data["user_id"] ?? -1);
+    }
+
     protected function requestInfo(ServerRequestInterface $request): array
     {
         $rawBody = $request->getBody()->getContents();

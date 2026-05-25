@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use Exception;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -14,6 +13,7 @@ use App\Controller;
 use App\Models\Card;
 use App\Models\Transaction;
 use App\Responses\ResponseFactory;
+use App\Responses\LoggedResponse;
 
 class DepositController extends Controller
 {
@@ -35,11 +35,7 @@ class DepositController extends Controller
     {
         list("data" => $data, "attributes" => $attributes) = $this->requestInfo($request);
 
-        if (
-            !isset($attributes["user"]) || 
-            gettype($attributes["user"]) !== "array" || 
-            $attributes["user"]["id"] !== (int) ($data["user_id"] ?? -1)
-        ) {
+        if (!$this->validateBankRequest($data, $attributes)) {
             return ResponseFactory::create(401)();
         } 
 
@@ -56,11 +52,7 @@ class DepositController extends Controller
             }
 
             try {
-                $status = $this->card->beginTransaction();
-
-                if (!$status) {
-                    throw new Exception("Can not begin transaction. Returning server error response");
-                }
+                $this->card->beginTransaction();
 
                 if ($this->card->deposit($cardId, $amount)) {
                     if ($this->card->commit() && $this->transaction->create($userId, $userId, $cardId, $type, $amount)) {
@@ -72,11 +64,9 @@ class DepositController extends Controller
 
                 $this->card->rollBack();
             } catch (\Throwable $e) {
-                // Maybe log it to some file
-                var_dump($e->getMessage());
                 $this->card->rollBack();
 
-                return ResponseFactory::create(500)(message: "Failed to deposit");
+                return (new LoggedResponse($e, $request))(message: "Failed to deposit");
             } 
         }
 

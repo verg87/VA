@@ -30,11 +30,7 @@ class TransactionsController extends Controller
     {
         list("query" => $query, "attributes" => $attributes) = $this->requestInfo($request);
 
-        if (
-            !isset($attributes["user"]) || 
-            gettype($attributes["user"]) !== "array" || 
-            $attributes["user"]["id"] !== (int) ($query["user_id"] ?? -1)
-        ) {
+        if (!$this->validateBankRequest($query, $attributes)) {
             return ResponseFactory::create(401)();
         } 
 

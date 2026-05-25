@@ -18,6 +18,7 @@ use App\Models\Account;
 use App\Models\Transaction;
 
 use App\Responses\ResponseFactory;
+use App\Responses\LoggedResponse;
 
 class TransferController extends Controller
 {
@@ -41,11 +42,7 @@ class TransferController extends Controller
     {
         list("data" => $data, "attributes" => $attributes) = $this->requestInfo($request);
 
-        if (
-            !isset($attributes["user"]) || 
-            gettype($attributes["user"]) !== "array" || 
-            $attributes["user"]["id"] !== (int) ($data["user_id"] ?? -1)
-        ) {
+        if (!$this->validateBankRequest($data, $attributes)) {
             return ResponseFactory::create(401)();
         } 
 
@@ -92,11 +89,9 @@ class TransferController extends Controller
 
                 $this->card->rollBack();
             } catch (\Throwable $e) {
-                // Maybe log it to some file
-                var_dump($e->getMessage());
                 $this->card->rollBack();
 
-                return ResponseFactory::create(500)(message: "Failed to transfer");
+                return (new LoggedResponse($e, $request))(message: "Failed to transfer");
             } 
         }
 

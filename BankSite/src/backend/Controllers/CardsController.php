@@ -15,6 +15,7 @@ use App\Models\Card;
 use App\Models\Account;
 
 use App\Responses\ResponseFactory;
+use App\Responses\LoggedResponse;
 
 class CardsController extends Controller
 {
@@ -38,11 +39,7 @@ class CardsController extends Controller
     {
         list("query" => $query, "attributes" => $attributes) = $this->requestInfo($request);
 
-        if (
-            !isset($attributes["user"]) || 
-            gettype($attributes["user"]) !== "array" || 
-            $attributes["user"]["id"] !== (int) ($query["user_id"] ?? -1)
-        ) {
+        if (!$this->validateBankRequest($query, $attributes)) {
             return ResponseFactory::create(401)();
         } 
 
@@ -72,11 +69,7 @@ class CardsController extends Controller
     {
         list("data" => $data, "attributes" => $attributes) = $this->requestInfo($request);
 
-        if (
-            !isset($attributes["user"]) || 
-            gettype($attributes["user"]) !== "array" || 
-            $attributes["user"]["id"] !== (int) ($data["user_id"] ?? -1)
-        ) {
+        if (!$this->validateBankRequest($data, $attributes)) {
             return ResponseFactory::create(401)();
         } 
 
@@ -112,24 +105,19 @@ class CardsController extends Controller
                         }
 
                         $this->card->rollBack();
-                        return ResponseFactory::create(500)(message: "Failed to register a card");
-                    }
-
-                    if ($this->card->commit()) {
+                    } else if ($this->card->commit()) {
                         return ResponseFactory::create(201)(message: "Successfully created banking card");
+                    } else {
+                        $this->card->rollBack();
                     }
-
-                    $this->card->rollBack();
-                    return ResponseFactory::create(500)(message: "Failed to register a card");
                 }
 
                 $this->card->rollBack();
                 return ResponseFactory::create(500)(message: "Failed to register a card");
             } catch (\Throwable $e) {
-                // Maybe log it to some file
-                var_dump($e->getMessage());
-
-                return ResponseFactory::create(500)(message: "Failed to register a card");
+                $this->card->rollBack();
+                
+                return (new LoggedResponse($e, $request))(message: "Failed to register a card");
             } 
         }
 
