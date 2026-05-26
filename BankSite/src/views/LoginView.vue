@@ -1,111 +1,83 @@
 <script setup>
+import { ref, onMounted, watch, nextTick } from "vue";
 import { RouterLink } from "vue-router";
-import { ref, computed } from "vue";
 import router from "@/router";
 import axios from "axios";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
+
+import { getPhoneMaskInstance, initiate, validatePhoneInput } from "@/general/phoneInputCommon";
 
 import "../assets/auth.css";
 
-const currentActiveLoginStage = ref("phoneNumber");
-const loginData = ref({});
+const step = ref("phone"); 
+const phoneNumber = ref("+"); 
+const password = ref("");
+const isLoading = ref(false);
 
-const stages = ref({
-    phoneNumber: {
-        header: "Phone number",
-        type: "text",
-        id: "phone-number",
-        hasEntered: false,
-        value: "",
-    },
-    password: {
-        header: "Password",
-        type: "password",
-        id: "password",
-        hasEntered: false,
-        value: "",
-    },
+const phoneInputRef = ref(null);
+let phoneMask;
+
+const setupPhoneMask = () => {
+    if (phoneInputRef.value && !phoneMask) {
+        phoneMask = getPhoneMaskInstance(phoneInputRef);
+        initiate(phoneMask);
+
+        phoneMask.value = phoneNumber.value; 
+
+        phoneMask.on('accept', () => {
+            phoneNumber.value = phoneMask.value;
+            validatePhoneInput(phoneMask); 
+        });
+    }
+}
+
+watch(step, async (newStep) => {
+    if (newStep === 'phone') {
+        await nextTick(); 
+        setupPhoneMask();
+    }
 });
+
+onMounted(setupPhoneMask);
+
+const goToPasswordStep = () => {
+    if (!phoneMask || phoneMask.unmaskedValue.length < 5) {
+        alert("Please enter a valid phone number.");
+        return;
+    }
+    step.value = "password";
+};
+
+const goToPhoneStep = () => {
+    step.value = "phone";
+};
 
 const login = async () => {
-    if (Object.values(loginData.value).some((prop) => !prop || prop === "")) {
-        alert("Fields should not be empty");
+    if (!password.value) {
+        alert("Password should not be empty");
         return;
-    } 
+    }
+    
+    isLoading.value = true;
 
     try {
-        await axios.post("/api/users/login", {data: loginData.value});
+        const loginData = {
+            "phone-number": phoneNumber.value.replaceAll(/\D/g, ""),
+            "password": password.value
+        };
+
+        await axios.post("/api/users/login", { data: loginData });
+        router.push({ path: "/bank" });
     } catch (err) {
-        if (axios.isAxiosError(err)) {
-            if (err.response && err.response.status < 500) {
-                alert("Invalid credentials");
-                return;
-            }
+        if (axios.isAxiosError(err) && err.response && err.response.status < 500) {
+            alert("Invalid credentials");
+        } else {
+            alert("Something went wrong...");
         }
-        
-        alert("Something went wrong...");
-        return;
-    }
-
-    router.push({ path: "/bank" });
-};
-
-const processLoginStage = async () => {
-    const stageName = currentActiveLoginStage.value;
-    const stage = stages.value[stageName];
-
-    if (stage.value === "") {
-        alert("Field should not be empty");
-        return;
-    }
-
-    loginData.value = {
-        ...loginData.value,
-        [stage.id]: stage.value,
-    };
-
-    stages.value[stageName].hasEntered = true;
-
-    const newStage = Object.entries(stages.value).find(
-        ([key, value]) => !value.hasEntered,
-    );
-
-    if (newStage) {
-        currentActiveLoginStage.value = newStage[0];
-    } else {
-        await login();
-    }
-};
-
-const getPreviousBtnVisibility = computed(() => {
-    return currentActiveLoginStage.value !== "phoneNumber";
-});
-
-const getNextBtnVisibility = computed(() => {
-    const currentStageKey = currentActiveLoginStage.value;
-    const stage = stages.value[currentStageKey];
-    const stageOrder = Object.keys(stages.value);
-    const currentIndex = stageOrder.indexOf(currentStageKey);
-
-    return currentIndex < stageOrder.length - 1 && stage.hasEntered;
-});
-
-const changeStage = (event) => {
-    const stageOrder = Object.keys(stages.value);
-    const currentIndex = stageOrder.indexOf(currentActiveLoginStage.value);
-    const currentStageData = stages.value[currentActiveLoginStage.value];
-    const newIndex =
-        event.currentTarget.id === "previous" ? currentIndex - 1 : currentIndex + 1;
-
-    if (currentStageData.value === "" && newIndex > currentIndex) {
-        alert("Field should not be empty");
-        return;
-    }
-
-    if (newIndex >= 0 && newIndex < stageOrder.length) {
-        currentActiveLoginStage.value = stageOrder[newIndex];
+    } finally {
+        isLoading.value = false;
     }
 };
 </script>
@@ -113,28 +85,58 @@ const changeStage = (event) => {
 <template>
     <div class="main">
         <div class="navbar">
-            <FontAwesomeIcon id="previous" :icon="faArrowLeft" v-show="getPreviousBtnVisibility" @click="changeStage" />
-            <RouterLink to="/" class="link" v-show="!getPreviousBtnVisibility">Home</RouterLink>
-            <RouterLink to="/sign-up" class="link" v-show="!getNextBtnVisibility">Sign up</RouterLink>
-            <FontAwesomeIcon id="next" :icon="faArrowRight" v-show="getNextBtnVisibility" @click="changeStage" />
+            <FontAwesomeIcon id="previous" :icon="faArrowLeft" v-show="step === 'password'" @click="goToPhoneStep" />
+            <RouterLink to="/" class="link" v-show="step === 'phone'">Home</RouterLink>
+            <RouterLink to="/sign-up" class="link">Sign up</RouterLink>
         </div>
+
         <div class="header-container">
             <p class="header-1">Login to your-bank</p>
         </div>
-        <div class="relative z-0 w-100 mb-6">
-            <input class="input focus:outline-none focus:ring-0 focus:border-brand peer"
-                :type="stages[currentActiveLoginStage].type" :id="stages[currentActiveLoginStage].id"
-                v-model.trim="stages[currentActiveLoginStage].value" placeholder=" " required />
-            <label
-                class="label peer-focus:inset-s-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-5 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
-                :for="stages[currentActiveLoginStage].id">
-                {{ stages[currentActiveLoginStage].header }}
-            </label>
+
+        <div v-if="step === 'phone'" class="w-full place-items-center">
+            <div class="relative z-0 w-100 mb-6">
+                <input class="input focus:outline-none focus:ring-0 focus:border-brand peer"
+                       type="tel"
+                       id="phone-number"
+                       v-model="phoneNumber"
+                       placeholder=" "
+                       required
+                       ref="phoneInputRef" />
+                <label
+                    class="label peer-focus:inset-s-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-5 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
+                    for="phone-number">
+                    Phone number
+                </label>
+            </div>
+            <div>
+                <button class="process-btn" @click="goToPasswordStep">Next</button>
+            </div>
         </div>
-        <div>
-            <button class="process-btn" @click="processLoginStage">Next</button>
+
+        <div v-if="step === 'password'" class="w-full place-items-center">
+            <div class="relative z-0 w-100 mb-6">
+                <input class="input focus:outline-none focus:ring-0 focus:border-brand peer"
+                       type="password"
+                       id="password"
+                       v-model="password"
+                       placeholder=" "
+                       required
+                       @keyup.enter="login" />
+                <label
+                    class="label peer-focus:inset-s-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-5 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
+                    for="password">
+                    Password
+                </label>
+            </div>
+            <div>
+                <button class="process-btn" @click="login" :disabled="isLoading">
+                    {{ isLoading ? 'Logging in...' : 'Login' }}
+                </button>
+            </div>
         </div>
     </div>
+
     <div class="footer">
         <p class="footer-text">© 2026 Your-Bank | <a href="#">Terms of service</a> | <a href="https://github.com/verg87">See More...</a> | English</p>
     </div>

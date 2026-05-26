@@ -1,171 +1,167 @@
 <script setup>
+import { ref, computed, watch, nextTick } from "vue";
 import { RouterLink } from "vue-router";
-import { ref, computed } from "vue";
 import router from "@/router";
 import axios from "axios";
 
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faArrowLeft, faArrowRight } from "@fortawesome/free-solid-svg-icons";
 
+import { getPhoneMaskInstance, initiate, validatePhoneInput } from "@/general/phoneInputCommon";
+
 import "../assets/auth.css";
 
-const currentActiveSignUpStage = ref("email");
-const signUpData = ref({});
+const isLoading = ref(false);
 
-const stages = ref({
-  email: {
-    header: "Email address",
-    type: "text",
-    id: "email",
-    hasEntered: false,
-    value: ""
-  },
-  phoneNumber: {
-    header: "Phone number",
-    type: "text",
-    id: "phone-number",
-    hasEntered: false,
-    value: ""
-  },
-  firstName: {
-    header: "First name",
-    type: "text",
-    id: "name",
-    hasEntered: false,
-    value: ""
-  },
-  lastName: {
-    header: "Last name",
-    type: "text",
-    id: "lastname",
-    hasEntered: false,
-    value: ""
-  },
-  password: {
-    header: "Password",
-    type: "password",
-    id: "password",
-    hasEntered: false,
-    value: ""
-  },
-  passwordConfirmation: {
-    header: "Confirm password",
-    type: "password",
-    id: "password-confirmation",
-    hasEntered: false,
-    value: ""
+const formData = ref({
+  email: "",
+  phoneNumber: "+",
+  firstName: "",
+  lastName: "",
+  password: "",
+  passwordConfirmation: "",
+});
+
+const steps = ['email', 'phoneNumber', 'firstName', 'lastName', 'password', 'passwordConfirmation'];
+const currentStepIndex = ref(0);
+const currentStep = computed(() => steps[currentStepIndex.value]);
+
+const isFirstStep = computed(() => currentStepIndex.value === 0);
+const isLastStep = computed(() => currentStepIndex.value === steps.length - 1);
+
+const canShowForwardArrow = () => {
+  const nextField = steps[currentStepIndex.value + 1] ?? null;
+
+  return nextField && 
+    currentStepIndex.value === steps.length - 1 && formData.value[nextField] !== "" ||
+    (nextField === "phoneNumber" && formData.value[nextField] !== "+");
+}
+
+const phoneInputRef = ref(null);
+let phoneMask;
+
+const setupPhoneMask = () => {
+  if (phoneInputRef.value && !phoneMask) {
+    phoneMask = getPhoneMaskInstance(phoneInputRef);
+    initiate(phoneMask);
+    phoneMask.value = formData.value.phoneNumber;
+
+    phoneMask.on('accept', () => {
+      formData.value.phoneNumber = phoneMask.value;
+      validatePhoneInput(phoneMask);
+    });
+  }
+}
+
+watch(currentStep, async (newStep) => {
+  if (newStep === 'phoneNumber') {
+    await nextTick();
+    setupPhoneMask();
   }
 });
 
-const register = async () => {
-  if (Object.values(signUpData.value).some((prop) => !prop || prop === "")) {
-    alert("Fields should not be empty");
-    return;
-  } else if (signUpData.value["password"] !== signUpData.value["password-confirmation"]) {
-    alert("Two passwords aren't matching");
+const nextStep = () => {
+  const currentField = currentStep.value;
+  const currentValue = formData.value[currentField];
+
+  if (!currentValue || (currentField === 'phoneNumber' && phoneMask && phoneMask.unmaskedValue.length < 5)) {
+    alert("Field is empty or invalid. Please fill it out before proceeding.");
     return;
   }
 
-  let response;
-
-  try {
-    response = await axios.post("/api/users/sign-up", { data: signUpData.value });
-  } catch (err) {
-    if (axios.isAxiosError(err)) {
-      if (err.response && err.response.status < 500) {
-        alert(err.response.data.message);
-        return;
-      }
-    }
-        
-    alert("Something went wrong...");
-    return;
-  }
-  
-  if (response.data.status === "success") {
-    router.push({ path: "/bank" });
+  if (!isLastStep.value) {
+    currentStepIndex.value++;
+  } else {
+    register();
   }
 };
 
-const processSignUpStage = async () => {
-  const stageName = currentActiveSignUpStage.value;
-  const stage = stages.value[stageName];
+const prevStep = () => {
+  if (!isFirstStep.value) {
+    currentStepIndex.value--;
+  }
+};
 
-  if (stage.value === "") {
-    alert("Field should not be empty");
+const register = async () => {
+  const data = formData.value;
+  if (Object.values(data).some(prop => !prop || prop === "")) {
+    alert("All fields are required.");
+    return;
+  }
+  if (data.password !== data.passwordConfirmation) {
+    alert("Passwords do not match.");
     return;
   }
 
-  signUpData.value = {
-    ...signUpData.value,
-    [stage.id]: stage.value,
-  };
+  isLoading.value = true;
+  try {
+    const apiData = {
+      "email": data.email,
+      "phone-number": data.phoneNumber.replaceAll(/\D/g, ""),
+      "name": data.firstName,
+      "lastname": data.lastName,
+      "password": data.password,
+      "password-confirmation": data.passwordConfirmation,
+    };
+    
+    await axios.post("/api/users/sign-up", { data: apiData });
+    router.push({ path: "/bank" });
 
-  stages.value[stageName].hasEntered = true;
-
-  const newStage = Object.entries(stages.value)
-    .find(([key, value]) => !value.hasEntered);
-
-  if (newStage) {
-    currentActiveSignUpStage.value = newStage[0];
-  } else {
-    await register();
+  } catch (err) {
+    if (axios.isAxiosError(err) && err.response && err.response.status < 500) {
+      alert(err.response.data.message || "An error occurred.");
+    } else {
+      alert("Something went wrong...");
+    }
+  } finally {
+    isLoading.value = false;
   }
-}
+};
 
-const getPreviousBtnVisibility = computed(() => {
-  return currentActiveSignUpStage.value !== "email";
-});
+const labels = {
+  email: "Email address",
+  phoneNumber: "Phone number",
+  firstName: "First name",
+  lastName: "Last name",
+  password: "Password",
+  passwordConfirmation: "Confirm password",
+};
 
-const getNextBtnVisibility = computed(() => {
-  const currentStageKey = currentActiveSignUpStage.value;
-  const stage = stages.value[currentStageKey];
-  const stageOrder = Object.keys(stages.value);
-  const currentIndex = stageOrder.indexOf(currentStageKey);
-
-  return currentIndex < stageOrder.length - 1 && stage.hasEntered;
-});
-
-const changeStage = (event) => {
-  const stageOrder = Object.keys(stages.value);
-  const currentIndex = stageOrder.indexOf(currentActiveSignUpStage.value);
-  const currentStageData = stages.value[currentActiveSignUpStage.value];
-  const newIndex = event.currentTarget.id === "previous" ? currentIndex - 1 : currentIndex + 1;
-
-  if (currentStageData.value === "" && newIndex > currentIndex) {
-    alert("Field should not be empty");
-    return;
-  }
-
-  if (newIndex >= 0 && newIndex < stageOrder.length) {
-    currentActiveSignUpStage.value = stageOrder[newIndex];
-  }
-}
 </script>
 
 <template>
   <div class="main">
     <div class="navbar">
-      <FontAwesomeIcon id="previous" :icon="faArrowLeft" v-show="getPreviousBtnVisibility" @click="changeStage" />
-      <RouterLink to="/" class="link" v-show="!getPreviousBtnVisibility">Home</RouterLink>
-      <RouterLink to="/login" class="link" v-show="!getNextBtnVisibility">Login</RouterLink>
-      <FontAwesomeIcon id="next" :icon="faArrowRight" v-show="getNextBtnVisibility" @click="changeStage" />
+      <FontAwesomeIcon id="previous" :icon="faArrowLeft" v-show="!isFirstStep" @click="prevStep" />
+      <RouterLink to="/" class="link" v-show="isFirstStep">Home</RouterLink>
+      <RouterLink to="/login" class="link" v-show="!canShowForwardArrow()">Login</RouterLink>
+      <FontAwesomeIcon id="next" :icon="faArrowRight" v-show="canShowForwardArrow()" @click="nextStep" />
     </div>
     <div class="header-container">
       <p class="header-1">Register to your-bank</p>
     </div>
+
     <div class="relative z-0 w-100 mb-6">
-      <input class="input focus:outline-none focus:ring-0 focus:border-brand peer"
-        :type="stages[currentActiveSignUpStage].type" :id="stages[currentActiveSignUpStage].id"
-        v-model.trim="stages[currentActiveSignUpStage].value" placeholder=" " required>
-      <label
+      <input v-if="currentStep === 'email'" type="email" v-model="formData.email" @keyup.enter="nextStep" id="email" class="input peer" placeholder=" " required />
+      <input v-if="currentStep === 'phoneNumber'" type="tel" v-model="formData.phoneNumber" @keyup.enter="nextStep" id="phoneNumber" class="input peer" placeholder=" " required ref="phoneInputRef" />
+      <input v-if="currentStep === 'firstName'" type="text" v-model="formData.firstName" @keyup.enter="nextStep" id="firstName" class="input peer" placeholder=" " required />
+      <input v-if="currentStep === 'lastName'" type="text" v-model="formData.lastName" @keyup.enter="nextStep" id="lastName" class="input peer" placeholder=" " required />
+      <input v-if="currentStep === 'password'" type="password" v-model="formData.password" @keyup.enter="nextStep" id="password" class="input peer" placeholder=" " required />
+      <input v-if="currentStep === 'passwordConfirmation'" type="password" v-model="formData.passwordConfirmation" @keyup.enter="nextStep" id="passwordConfirmation" class="input peer" placeholder=" " required />
+
+      <label 
         class="label peer-focus:inset-s-0 peer-placeholder-shown:scale-100 peer-placeholder-shown:translate-y-0 peer-focus:scale-75 peer-focus:-translate-y-5 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto"
-        :for="stages[currentActiveSignUpStage].id">
-        {{ stages[currentActiveSignUpStage].header }}
+        :for="currentStep"
+      >
+        {{ labels[currentStep] }}
       </label>
     </div>
+
     <div>
-      <button class="process-btn" @click="processSignUpStage">Next</button>
+      <button class="process-btn" @click="nextStep" :disabled="isLoading">
+        <span v-if="isLoading">Processing...</span>
+        <span v-else>{{ isLastStep ? 'Sign Up' : 'Next' }}</span>
+      </button>
     </div>
   </div>
   <div class="footer">
