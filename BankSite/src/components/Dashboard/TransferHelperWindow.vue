@@ -15,8 +15,8 @@ const toggleVisibility = () => {
       <div class="flex flex-col text-sm pt-4">
         <p class="w-44">If you don't know to whom you can transfer money, you can use next phone numbers:</p>
         <ul class="list-disc list-inside my-1">
-          <li>19077134118</li>
-          <li>19078552785</li>
+          <li>1 907 713 4118</li>
+          <li>1 907 855 2785</li>
         </ul>
         <p>These are test accounts and not actual people</p>
       </div>

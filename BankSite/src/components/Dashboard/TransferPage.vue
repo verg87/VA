@@ -1,6 +1,13 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, useTemplateRef, onMounted } from 'vue';
 import axios from "axios";
+
+import parsePhoneNumber from 'libphonenumber-js'
+
+import { initiate, getPhoneMaskInstance } from '@/general/phoneInputCommon';
+
+const phoneInputRef = useTemplateRef("phone-input");
+let phoneMask;
 
 const props = defineProps({
     cards: Array,
@@ -10,6 +17,11 @@ const props = defineProps({
 const emit = defineEmits([
     "transfer-money"
 ]);
+
+onMounted(() => {
+    phoneMask = getPhoneMaskInstance(phoneInputRef);
+    initiate(phoneMask);
+});
 
 const inputTimeout = ref(null);
 const transferMatchedPhoneNumbers = ref([]);
@@ -42,21 +54,23 @@ const proceedTransfer = () => {
     closeTransferWindow();
 };
 
-const findPhoneNumber = (event) => {
+const findPhoneNumber = () => {
     clearTimeout(inputTimeout.value);
-    const phoneNumber = event.currentTarget.value;
+    const phoneNumber = phoneInputRef.value.value.replaceAll(/\D/g, ""); 
 
     if (!/^\d+$/.test(phoneNumber)) {
         transferMatchedPhoneNumbers.value = [];
         return;
     }
 
-    transferMatchedPhoneNumbers.value = transferMatchedPhoneNumbers.value.filter((ph) => ph === phoneNumber);
-
+    transferMatchedPhoneNumbers.value = transferMatchedPhoneNumbers.value.filter((pn) => pn === phoneNumber);
+    
     inputTimeout.value = setTimeout(async () => {
         try {
             const user = (await axios.get("/api/users/", { params: { phone_number: phoneNumber } }))
                 .data.data;
+
+            user.phone_number = parsePhoneNumber("+" + user.phone_number).formatInternational();
 
             transferMatchedPhoneNumbers.value.push(user);
         } catch (err) {
@@ -73,8 +87,8 @@ const findPhoneNumber = (event) => {
 <template>
     <div class="dashboard-transfer">
         <div v-if="!transferWindowVisibility">
-            <input @input="findPhoneNumber" class="transfer-recipient-phone-input" type="number"
-                id="recipient-phone" placeholder="e.g., +1234567890" />
+            <input @input="findPhoneNumber" class="transfer-recipient-phone-input" type="tel"
+                id="recipient-phone" placeholder="e.g., +1 234 567 8901" ref="phone-input"/>
 
             <div v-if="transferMatchedPhoneNumbers.length <= 0" class="text-center mt-6">
                 <p class="text-gray-500">There is no matching phone number...</p>

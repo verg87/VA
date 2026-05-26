@@ -1,5 +1,5 @@
 import IMask from "imask";
-import { parsePhoneNumber } from "awesome-phonenumber";
+import parsePhoneNumber from 'libphonenumber-js'
 
 const getPhoneMaskInstance = (elementRef) => IMask(elementRef.value, {
     mask: [
@@ -46,7 +46,7 @@ const validatePhoneInput = (phoneMask) => {
     if (unmaskedValue.length > 3) { 
         const phoneNumber = parsePhoneNumber('+' + unmaskedValue);
         console.log(phoneNumber);
-        if (phoneNumber && phoneNumber.valid) {
+        if (phoneNumber && phoneNumber.isValid()) {
             console.log('Valid number entered:', phoneNumber.formatInternational());
         }
     }
