@@ -45,13 +45,7 @@ npm run dev
     ```
     > **Note:** When installing the RoadRunner executable, do not create a `.rr.yaml` file, as one is already included in the project.
 
-4.  **Create database tables:**
-
-    ```bash
-    php ./src/backend/Setup.php
-    ```
-
-5.  **Initialize Vault:**
+4.  **Initialize Vault:**
 
     If you are running Vault for the first time, you need to initialize it.
 
@@ -61,7 +55,7 @@ npm run dev
 
     This command will output a set of unseal keys and a root token.
 
-6.  **Create the Environment File:**
+5.  **Create the Environment File:**
 
     Create a `.env` file in the project's root directory. Populate it with the unseal keys and the root token generated during the `vault operator init` step. A minimum of three unseal keys is required for the unseal process.
 
@@ -76,7 +70,25 @@ npm run dev
 
     > **Note:** In a production environment, you would never want to store unseal keys and root tokens in plaintext files. These credentials should be securely distributed among trusted personnel. This `.env` file is for development convenience only.
 
-7.  **Start the Vault Server:**
+6. **Add database credentials:**
+
+    Add following database credentials to the env file created in the previous step. Make sure that bank database doesn't exist already
+
+    ```dotenv
+    DB_DRIVER="mysql"
+    DB_HOST="your-host"
+    DB_USER="your-user"
+    DB_PASSWORD="your-password"
+    DB_NAME="bank"
+    ``` 
+
+7.  **Create database tables:**
+
+    ```bash
+    php ./src/backend/Setup.php
+    ```
+
+8.  **Start the Vault Server:**
 
     The project includes a pre-configured `vault-config.hcl` file. Start the Vault server with the following command:
 
@@ -84,7 +96,7 @@ npm run dev
     vault server -config="vault-config.hcl"
     ```
 
-8.  **Run the Application:**
+9.  **Run the Application:**
 
     Open a new terminal window (the Vault server is running in the current one) and start the website:
 
