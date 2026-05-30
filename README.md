@@ -8,7 +8,7 @@ This repository contains a collection of standalone web applications built with 
 
 A well secured banking site that allows users to create credit cards, depit cards, deposit and transfer.
 
-- **Features:** Authentication, Authorization, JWT tokens, Envelope Encryption, Fingerprint use, Data Encryption.
+- **Features:** Authentication, Authorization, JWT tokens, Envelope Encryption, Fingerprint use, Data Encryption, Rate Limiting.
 - **Technologies:** Vue, JavaScript, PHP, MySQL, Tailwind CSS, HashiCorp Vault
 
 ## Getting Started

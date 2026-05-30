@@ -19,6 +19,7 @@ class ResponseFactory
             401 => new Responses\UnauthorizedResponse(),
             404 => new Responses\NotFoundResponse(),
             405 => new Responses\MethodNotAllowedResponse(),
+            429 => new Responses\TooManyRequestsResponse(),
             500 => new Responses\InternalServerErrorResponse(),
             default => new BadStatus($statusCode),
         };

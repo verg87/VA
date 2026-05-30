@@ -7,7 +7,7 @@ namespace App;
 use PDO;
 use PDOException;
 
-use App\Helpers\LoggerTrait;
+use App\Traits\LoggerTrait;
 
 class DB
 {

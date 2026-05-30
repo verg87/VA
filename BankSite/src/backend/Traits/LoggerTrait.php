@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Helpers;
+namespace App\Traits;
 
 use Monolog\Logger;
 use Respect\Validation\Exceptions\ValidationException;

@@ -10,7 +10,7 @@ use Psr\Http\Message\ResponseInterface;
 use Throwable;
 
 use App\Responses\ResponseFactory;
-use App\Helpers\LoggerTrait;
+use App\Traits\LoggerTrait;
 
 class ErrorHandlerMiddleware implements MiddlewareInterface
 {

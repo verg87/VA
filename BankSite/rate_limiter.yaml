@@ -1,0 +1,7 @@
+framework:
+    rate_limiter:
+        bank_api:
+            policy: "token_bucket"
+            limit: 100
+            rate: { interval: "15 minutes", amount: 50 }
+            id: 1

@@ -36,6 +36,7 @@ use App\Controllers\RefreshTokenController;
 
 use App\Middleware\AuthMiddleware;
 use App\Strategies\ErrorHandlerStrategy;
+use App\Middleware\RateLimiterMiddleware;
 use App\Responses\LoggedResponse;
 
 $worker = Worker::create();
@@ -46,6 +47,7 @@ $psr7 = new PSR7Worker($worker, $factory, $factory, $factory);
 $router = new Router();
 
 $router->setStrategy(new ErrorHandlerStrategy());
+$router->middleware($container->get(RateLimiterMiddleware::class));
 
 $router->group("/api/bank", function (RouteGroup $router) use ($container) {
     $router->get("/cards", $container->get(CardsController::class));

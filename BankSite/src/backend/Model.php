@@ -7,7 +7,7 @@ namespace App;
 use Exception;
 use Throwable;
 
-use App\Helpers\LoggerTrait;
+use App\Traits\LoggerTrait;
 
 abstract class Model
 {

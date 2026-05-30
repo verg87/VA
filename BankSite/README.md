@@ -124,6 +124,8 @@ Each JWT consists of three distinct parts:
 
 This approach enhances scalability and overall security by removing the exposure of long lived client side credentials.
 
+This application implements rate limiting on all incoming requests. This mechanism restricts the number of requests a user or client can make within certain time period. If the request limit is exceeded, the server will respond with a `Too Many Requests` status code, temporarily blocking further requests from that source. This helps prevent brute-force attacks and DoS attacks.
+
 To protect sensitive data, such as credit card information, this application is using **Envelope Encryption**. This method involves encrypting data with a unique data encryption key (DEK), which is then itself encrypted by a key encryption key (KEK). KEK is usually stored on a secure key management service (KMS) or, in case of this project, in HashiCorp Vault. This encryption approach ensures that even if encrypted data and DEK is compromised, it remains unreadable without access to KEK.
 
 ## Application Preview

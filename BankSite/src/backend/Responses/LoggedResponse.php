@@ -5,7 +5,7 @@ namespace App\Responses;
 use Psr\Http\Message\ServerRequestInterface;
 use Throwable;
 
-use App\Helpers\LoggerTrait;
+use App\Traits\LoggerTrait;
 
 class LoggedResponse extends Responses\InternalServerErrorResponse
 {

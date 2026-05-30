@@ -10,8 +10,12 @@ use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Nyholm\Psr7\Response;
 
+use App\Traits\IpRetrieverTrait;
+
 abstract class Controller
 {
+    use IpRetrieverTrait;
+
     public function __construct(Model|Vault ...$models)
     {
     }
@@ -36,11 +40,7 @@ abstract class Controller
         $data = $parsedBody["data"] ?? [];
         $userAgent = $request->getHeader("User-Agent")[0] ?? "";
 
-        $ipAddress = isset($request->getServerParams()["REMOTE_ADDR"]) 
-            ? $request->getServerParams()["REMOTE_ADDR"] 
-            : (isset($request->getServerParams()["HTTP_X_FORWARDED_FOR"]) 
-                ? $request->getServerParams()["HTTP_X_FORWARDED_FOR"] 
-                : $request->getServerParams()["HTTP_CLIENT_IP"]);
+        $ipAddress = $this->getIpAddress($request);
 
         return [
             "attributes" => $request->getAttributes(),
