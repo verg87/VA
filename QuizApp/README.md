@@ -1,5 +1,0 @@
-# QuizApp
-
-## License
-
-MIT
